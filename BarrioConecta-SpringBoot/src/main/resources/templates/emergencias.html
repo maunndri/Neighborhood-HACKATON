@@ -1,0 +1,71 @@
+<!doctype html><html lang="es" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Emergencias')}"></head><body><div th:replace="~{fragments :: navbar}"></div><div th:replace="~{fragments :: sos-bubble}"></div>
+<main class="container py-4 help-page">
+ <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div><div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+ <div class="page-heading"><div><span class="eyebrow"><i class="bi bi-heart-pulse-fill me-1"></i>Apoyo humanitario entre vecinos</span><h1 class="section-title">Centro de ayuda y emergencias</h1><p class="muted mb-0">Reporta necesidades urgentes, coordina recursos críticos y sigue cada caso hasta que se resuelva.</p></div>
+  <div class="d-flex gap-2 flex-wrap"><a th:href="@{/emergencias/nuevo}" class="btn btn-danger"><i class="bi bi-hand-index-thumb-fill me-1"></i>Necesito ayuda</a><a th:href="@{/mapa}" class="btn btn-outline-success"><i class="bi bi-map me-1"></i>Ver mapa</a></div></div>
+
+ <div class="official-warning"><i class="bi bi-exclamation-triangle-fill"></i><div><strong>En una emergencia real, llama primero a los servicios oficiales.</strong><span>Neighborhood coordina soporte solidario entre vecinos cercanos, pero no sustituye a bomberos, policía, ambulancias ni autoridades.</span></div></div>
+ <section class="hotlines" aria-label="Números de emergencia">
+  <a class="hotline" href="tel:105"><i class="bi bi-shield-fill"></i><strong>105</strong><span>Policía</span></a>
+  <a class="hotline" href="tel:116"><i class="bi bi-fire"></i><strong>116</strong><span>Bomberos</span></a>
+  <a class="hotline" href="tel:106"><i class="bi bi-heart-pulse-fill"></i><strong>106</strong><span>Ambulancia (SAMU)</span></a>
+  <a class="hotline" href="tel:115"><i class="bi bi-cloud-lightning-rain-fill"></i><strong>115</strong><span>Defensa Civil</span></a>
+ </section>
+ <p class="small muted">Números oficiales de Perú. Funcionan también sin conexión desde tu teléfono.</p>
+
+ <section class="stats-strip my-3" aria-label="Resumen de solicitudes">
+  <div class="stat warn"><strong th:text="${pendientes}">0</strong><span>pendientes</span></div>
+  <div class="stat info"><strong th:text="${coordinando}">0</strong><span>en coordinación</span></div>
+  <div class="stat ok"><strong th:text="${atendidasTotal}">0</strong><span>atendidas</span></div>
+ </section>
+
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+  <h2 class="h4 fw-bold mb-0">Vecinos que necesitan asistencia</h2>
+  <div class="d-flex flex-wrap gap-2">
+   <button type="button" class="btn btn-sm btn-outline-success" data-walkable-filter><i class="bi bi-person-walking me-1"></i>A pie (≤ 15 min)</button>
+   <a class="btn btn-sm btn-outline-secondary" th:classappend="${estado == ''} ? ' active'" th:href="@{/emergencias}">Todas</a>
+   <a class="btn btn-sm btn-outline-secondary" th:classappend="${estado == 'Pendiente'} ? ' active'" th:href="@{/emergencias(estado='Pendiente')}">Pendientes</a>
+   <a class="btn btn-sm btn-outline-secondary" th:classappend="${estado == 'En coordinación'} ? ' active'" th:href="@{/emergencias(estado='En coordinación')}">En coordinación</a>
+   <button type="button" class="btn btn-sm btn-outline-success" data-distance-sort><i class="bi bi-sort-down me-1"></i>Más cerca</button>
+  </div>
+ </div>
+ <div class="distance-help small text-secondary mb-3" id="distance-status"><i class="bi bi-person-walking text-success me-1"></i>Calculando minutos a pie hasta cada solicitud…</div>
+ <div class="row g-3" data-geo-list>
+  <div class="col-lg-6" th:each="e : ${reportes}" th:id="'emergencia-' + ${e.id}" data-geo-card th:attr="data-lat=${e.latitud},data-lon=${e.longitud}">
+   <article class="alert-tile h-100" th:classappend="${e.sos} ? ' alert-sos' : ''">
+    <div class="d-flex flex-wrap align-items-center gap-2">
+     <span class="badge" th:classappend="${e.sos} ? ' text-bg-danger' : ' text-bg-warning'" th:text="${e.categoria}"></span>
+     <span class="status-pill" th:classappend="${e.estado == 'Pendiente'} ? ' st-pend' : ' st-coord'" th:text="${e.estado}"></span>
+     <span class="service-distance ms-auto" data-distance><i class="bi bi-person-walking"></i> …</span>
+    </div>
+    <h3 class="h5 fw-bold mt-3" th:text="${e.titulo}"></h3>
+    <p class="small muted" th:text="${e.descripcion}"></p>
+    <div class="small mb-2"><i class="bi bi-person-circle me-1"></i><strong th:text="${e.usuario.nombreCorto}"></strong> <span class="badge-solidario" th:text="${e.usuario.insigniaSolidaria}"></span><span class="muted" th:if="${e.usuario.zona != null and !#strings.isEmpty(e.usuario.zona)}" th:text="' · Zona: ' + ${e.usuario.zona}"></span></div>
+    <div th:replace="~{ayuda :: seguimiento(${e}, 'emergencia', ${usuarioIdActual})}"></div>
+    <div class="d-flex flex-wrap justify-content-end gap-2 mt-2 align-items-center">
+     <button type="button" class="btn btn-outline-danger btn-sm" th:attr="data-wa-share='🚨 EMERGENCIA VECINAL en Neighborhood: ' + ${e.titulo} + ' - Vecino: ' + ${e.usuario.nombreCorto} + '. ¡Coordinemos apoyo!',data-wa-url='/emergencias#emergencia-' + ${e.id}"><i class="bi bi-whatsapp me-1"></i>Difundir en WhatsApp Vecinal</button>
+     <button type="button" class="btn btn-link btn-sm text-secondary" th:if="${usuarioIdActual == null or usuarioIdActual != e.usuario.id}" data-report-tipo="emergencia" th:attr="data-report-id=${e.id}"><i class="bi bi-flag me-1"></i>Reportar</button>
+    </div>
+   </article>
+  </div>
+ </div>
+ <div class="empty-state" th:if="${#lists.isEmpty(reportes)}">No hay solicitudes activas con este filtro. Si alguien necesita ayuda, puede reportarla aquí.</div>
+
+ <section class="mt-4" th:if="${!#lists.isEmpty(atendidas)}">
+  <h2 class="h5 fw-bold">Atendidas recientemente</h2>
+  <div class="resolved-row" th:each="a : ${atendidas}"><i class="bi bi-check-circle-fill text-success me-2"></i><span th:text="${a.titulo}"></span><span class="muted small ms-auto" th:text="${a.categoria}"></span></div>
+ </section>
+
+ <section class="help-resource-panel mt-4">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3"><div><h2 class="h4 fw-bold mb-1">Recursos críticos y grupos de apoyo disponibles</h2><p class="small muted mb-0">Brigadas, puntos de agua, generadores, botiquines y voluntarios de tu comunidad.</p></div><a th:href="@{/emergencias/grupos/nuevo}" class="btn btn-bc btn-sm"><i class="bi bi-plus-lg me-1"></i>Ofrecer un recurso</a></div>
+  <div class="row g-3" th:if="${!#lists.isEmpty(recursos)}"><div class="col-md-6 col-xl-4" th:each="g : ${recursos}"><article class="help-resource-card h-100">
+   <div class="help-resource-band" th:classappend="${g.categoria != null and #strings.containsIgnoreCase(g.categoria,'salud')} ? ' band-red' : (${g.categoria != null and #strings.containsIgnoreCase(g.categoria,'rescate')} ? ' band-blue' : ' band-gold')"><i class="bi bi-hand-heart-fill"></i><span th:text="${g.categoria}"></span></div>
+   <div class="p-3"><div class="mb-2"><span class="badge badge-ver" th:if="${g.verificado}"><i class="bi bi-patch-check-fill me-1"></i>Verificado</span><span class="badge text-bg-light" th:unless="${g.verificado}">Sin verificar</span></div><h3 class="h5 fw-bold mb-1" th:text="${g.nombre}"></h3><div class="small muted mb-2" th:text="${g.tipo}"></div><p class="small mb-3" th:text="${g.descripcion}"></p>
+    <div class="help-meta" th:if="${g.zonaCobertura != null and !g.zonaCobertura.isEmpty()}"><i class="bi bi-geo-alt-fill"></i><span th:text="${g.zonaCobertura}"></span></div><div class="help-meta" th:if="${g.disponibilidad != null and !g.disponibilidad.isEmpty()}"><i class="bi bi-clock-fill"></i><span th:text="${g.disponibilidad}"></span></div>
+    <div class="d-flex flex-wrap gap-2 mt-3"><a class="btn btn-sm btn-success flex-grow-1" th:if="${g.telefono != null and !g.telefono.isEmpty()}" th:href="'https://wa.me/' + ${g.telefonoWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Solicitar apoyo</a><a class="btn btn-sm btn-outline-success" th:if="${g.telefono != null and !g.telefono.isEmpty()}" th:href="'tel:' + ${g.telefono}" aria-label="Llamar"><i class="bi bi-telephone"></i></a><span class="small muted" th:if="${g.telefono == null or g.telefono.isEmpty()}">Sin teléfono publicado</span></div>
+   </div></article></div></div>
+  <div class="empty-state py-4" th:if="${#lists.isEmpty(recursos)}">Todavía no hay recursos vecinales publicados. Si puedes ofrecer transporte, alimentos, refugio u otra ayuda, comparte tu recurso.</div>
+  <div class="d-flex justify-content-end mt-3"><a th:href="@{/emergencias/grupos}" class="small text-success text-decoration-none fw-bold">Ver directorio completo →</a></div>
+  <p class="small text-secondary border-top pt-3 mt-3 mb-0"><i class="bi bi-info-circle me-1"></i>Los recursos «Verificado» fueron revisados por un administrador; aun así, confirma su disponibilidad antes de acudir.</p>
+ </section>
+</main><div th:replace="~{fragments :: footer}"></div><div th:replace="~{layout :: scripts}"></div><script th:src="@{/js/distancia.js}"></script></body></html>

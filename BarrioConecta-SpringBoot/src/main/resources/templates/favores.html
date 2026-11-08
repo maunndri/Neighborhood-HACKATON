@@ -1,0 +1,80 @@
+<!doctype html><html lang="es" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Cadena de favores')}"></head><body><div th:replace="~{fragments :: navbar}"></div><div th:replace="~{fragments :: sos-bubble}"></div>
+<main class="container py-4 favors-page">
+ <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div><div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+ <div class="page-heading"><div><span class="eyebrow"><i class="bi bi-heart-fill me-1"></i>Economía Solidaria · Sin dinero de por medio</span><h1 class="section-title">Cadena de favores & Banco de Tiempo</h1><p class="muted mb-0">Préstamo de herramientas, movilidad solidaria, donación de materiales e intercambio de habilidades entre vecinos.</p></div>
+  <a th:href="@{/favores/nuevo(tipo=${vista == 'ofrezco' ? 'ofrezco' : 'solicito'})}" class="btn btn-bc align-self-md-center"><i class="bi bi-plus-lg me-1"></i><span th:text="${vista == 'ofrezco'} ? 'Ofrecer ayuda' : 'Pedir ayuda'">Pedir ayuda</span></a></div>
+
+ <!-- Banner del Banco de Tiempo y Solidaridad Vecinal -->
+ <section class="solidarity-bank-banner mb-4">
+  <div class="row g-3 align-items-center">
+   <div class="col-md-8">
+    <div class="d-flex align-items-center gap-2 mb-1">
+     <span class="badge bg-success text-white"><i class="bi bi-clock-history me-1"></i>BANCO DE TIEMPO VECINAL</span>
+     <span class="small fw-bold text-success">0% Dinero · 100% Reciprocidad</span>
+    </div>
+    <h2 class="h5 fw-bold mb-1">Cada favor completado suma +15 Créditos de Gratitud e Insignias Vecinales</h2>
+    <p class="small text-secondary mb-2">Cuando prestas una herramienta o apoyas a un vecino y él marca la solicitud como <strong>Resuelta</strong>, tu reputación solidaria sube de <em>Vecino Activo</em> a <em>Mano Amiga</em>, <em>Vecino Solidario</em> y <em>Guardián del Barrio</em>.</p>
+    <div class="d-flex flex-wrap gap-2">
+     <a class="solidarity-quick-pill" th:href="@{/favores(vista=${vista},categoria='Herramientas')}"><i class="bi bi-hammer"></i> Préstamo de herramientas</a>
+     <a class="solidarity-quick-pill" th:href="@{/favores(vista=${vista},categoria='Transporte')}"><i class="bi bi-car-front-fill"></i> Movilidad solidaria</a>
+     <a class="solidarity-quick-pill" th:href="@{/favores(vista=${vista},categoria='Intercambio de habilidades')}"><i class="bi bi-lightbulb-fill"></i> Intercambio de habilidades</a>
+     <a class="solidarity-quick-pill" th:href="@{/favores(vista=${vista},categoria='Donación de materiales')}"><i class="bi bi-box2-heart-fill"></i> Donación de materiales</a>
+    </div>
+   </div>
+   <div class="col-md-4 d-none d-md-block">
+    <img th:src="@{/images/photos/favores-herramientas.jpg}" alt="Vecinos compartiendo herramientas" class="img-fluid rounded-4 shadow-sm" style="max-height:155px;width:100%;object-fit:cover">
+   </div>
+  </div>
+ </section>
+
+ <div class="favor-tabs mb-3" role="tablist">
+  <a class="favor-tab need" th:classappend="${vista == 'necesito'} ? ' active'" th:href="@{/favores(vista='necesito')}"><span class="favor-tab-icon"><i class="bi bi-hand-index-thumb-fill"></i></span><span class="favor-tab-copy"><strong>Necesito ayuda</strong><small>Encuentra apoyo de tus vecinos</small></span><span class="count" th:text="${totalNecesitan}">0</span></a>
+  <a class="favor-tab give" th:classappend="${vista == 'ofrezco'} ? ' active'" th:href="@{/favores(vista='ofrezco')}"><span class="favor-tab-icon"><i class="bi bi-gift-fill"></i></span><span class="favor-tab-copy"><strong>Quiero ayudar</strong><small>Comparte lo que puedes ofrecer</small></span><span class="count" th:text="${totalOfrecen}">0</span></a>
+ </div>
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <div class="chip-row">
+   <a class="chip" th:classappend="${categoria == ''} ? ' active'" th:href="@{/favores(vista=${vista},estado=${estado})}">Todas</a>
+   <a class="chip" th:each="c : ${catFavor}" th:classappend="${categoria == c} ? ' active'" th:href="@{/favores(vista=${vista},categoria=${c},estado=${estado})}" th:text="${c}"></a>
+  </div>
+  <div class="d-flex flex-wrap gap-2 align-items-center">
+   <button type="button" class="btn btn-sm btn-outline-success" data-walkable-filter><i class="bi bi-person-walking me-1"></i>A pie (≤ 15 min)</button>
+   <a class="btn btn-sm btn-outline-secondary" th:classappend="${estado == 'Pendiente'} ? ' active'" th:href="@{/favores(vista=${vista},categoria=${categoria},estado=${estado == 'Pendiente' ? '' : 'Pendiente'})}">Pendientes</a>
+   <a class="btn btn-sm btn-outline-secondary" th:classappend="${estado == 'En coordinación'} ? ' active'" th:href="@{/favores(vista=${vista},categoria=${categoria},estado=${estado == 'En coordinación' ? '' : 'En coordinación'})}">En coordinación</a>
+   <button type="button" class="btn btn-sm btn-outline-success" data-distance-sort><i class="bi bi-sort-down me-1"></i>Más cerca</button>
+  </div>
+ </div>
+ <div class="distance-help small text-secondary mb-3" id="distance-status"><i class="bi bi-person-walking text-success me-1"></i>Calculando distancia a pie hasta cada vecino…</div>
+ <div class="row g-3" data-geo-list>
+  <div class="col-lg-6" th:each="f : ${favores}" th:id="'favor-' + ${f.id}" data-geo-card th:attr="data-lat=${f.latitud},data-lon=${f.longitud}">
+   <article class="favor-tile h-100" th:classappend="${f.oferta} ? ' favor-offer' : ' favor-request'">
+    <div class="favor-topline flex-wrap">
+     <span class="favor-type" th:text="${f.oferta} ? 'Ofrece ayuda' : 'Necesita ayuda'"></span>
+     <span class="status-pill" th:classappend="${f.estado == 'Pendiente'} ? ' st-pend' : (${f.estado == 'En coordinación'} ? ' st-coord' : ' st-res')" th:text="${f.estado}"></span>
+     <span class="service-distance ms-auto" data-distance><i class="bi bi-person-walking"></i> …</span>
+    </div>
+    <h2 class="h5 fw-bold mt-3 mb-2" th:text="${f.titulo}"></h2>
+    <p class="small muted favor-description" th:text="${f.descripcion}"></p>
+    <div class="favor-meta">
+     <span><i class="bi bi-tag"></i><span th:text="${f.categoria}"></span></span>
+     <span th:if="${f.disponibilidad != null}"><i class="bi bi-clock"></i><span th:text="${f.disponibilidad}"></span></span>
+     <span th:if="${f.usuario.zona != null and !#strings.isEmpty(f.usuario.zona)}"><i class="bi bi-geo-alt"></i><span th:text="${f.usuario.zona}"></span></span>
+    </div>
+    <div class="provider-row">
+     <span class="provider-avatar" th:text="${#strings.substring(f.usuario.nombre,0,1)}">V</span>
+     <div class="small">
+      <strong class="d-block"><span th:text="${f.usuario.nombreCorto}"></span> <span class="badge-solidario" th:text="${f.usuario.insigniaSolidaria}"></span></strong>
+      <span class="muted"><span th:text="${f.usuario.ayudasCompletadas}">0</span> ayudas completadas · <span th:text="${f.usuario.creditosSolidarios}">10</span> créditos solidarios</span>
+     </div>
+    </div>
+    <div th:replace="~{ayuda :: seguimiento(${f}, 'favor', ${usuarioIdActual})}"></div>
+    <div class="d-flex flex-wrap gap-2 mt-2 justify-content-end align-items-center">
+     <button type="button" class="btn btn-outline-success btn-sm" th:attr="data-wa-share='🤝 Cadena de Favores en Neighborhood (' + (${f.oferta} ? 'Ofrece' : 'Necesita') + '): ' + ${f.titulo} + ' - ' + ${f.usuario.nombreCorto},data-wa-url='/favores?vista=' + (${f.oferta} ? 'ofrezco' : 'necesito') + '#favor-' + ${f.id}"><i class="bi bi-whatsapp me-1"></i>Compartir en mi cuadra</button>
+     <form th:if="${usuarioIdActual != null and usuarioIdActual == f.usuario.id}" th:action="@{/favores/{id}/eliminar(id=${f.id})}" method="post"><button class="btn btn-sm btn-delete" data-confirm="¿Eliminar esta publicación?"><i class="bi bi-trash3 me-1"></i>Eliminar</button></form>
+     <button type="button" class="btn btn-link btn-sm text-secondary" th:if="${usuarioIdActual == null or usuarioIdActual != f.usuario.id}" data-report-tipo="favor" th:attr="data-report-id=${f.id}"><i class="bi bi-flag me-1"></i>Reportar</button>
+    </div>
+   </article>
+  </div>
+ </div>
+ <div class="empty-state" th:if="${#lists.isEmpty(favores)}"><span th:text="${vista == 'ofrezco'} ? 'Todavía nadie ofrece ayuda con estos filtros. ¡Sé el primero en ofrecer algo!' : 'No hay solicitudes con estos filtros por ahora.'"></span></div>
+ <p class="small muted mt-3"><i class="bi bi-check2-circle me-1"></i><span th:text="${totalResueltos}">0</span> favores ya fueron resueltos entre vecinos sin dinero.</p>
+</main><div th:replace="~{fragments :: footer}"></div><div th:replace="~{layout :: scripts}"></div><script th:src="@{/js/distancia.js}"></script></body></html>

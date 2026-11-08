@@ -1,0 +1,16 @@
+# Compilación de Maven / Java
+**/target/
+*.class
+*.jar
+*.war
+*.ear
+*.log
+
+# Archivos de entorno e IDE
+.idea/
+*.iml
+.settings/
+.project
+.classpath
+.DS_Store
+Thumbs.db

@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!--
+  Panel de seguimiento reutilizable (favores y emergencias).
+  Uso: th:replace="~{ayuda :: seguimiento(${item}, 'favor', ${usuarioIdActual})}"
+-->
+<div th:fragment="seguimiento(item, tipo, uid)" class="help-track" th:with="esDueno=${uid != null and uid == item.usuario.id},mia=${item.respuestaDe(uid)}">
+ <ol class="status-steps">
+  <li class="done"><span>1</span>Pendiente</li>
+  <li th:classappend="${item.estado != 'Pendiente'} ? 'done'"><span>2</span>En coordinación</li>
+  <li th:classappend="${item.estado == 'Resuelta'} ? 'done'"><span>3</span>Resuelta</li>
+ </ol>
+ <div class="help-meta-row">
+  <span th:if="${item.vecinosCoordinando > 0}"><i class="bi bi-people-fill"></i> <span th:text="${item.vecinosCoordinando} + (${item.vecinosCoordinando == 1} ? ' vecino coordinando ayuda' : ' vecinos coordinando ayuda')"></span></span>
+  <span th:if="${item.responsable != null}"><i class="bi bi-person-check-fill"></i> Responsable: <strong th:text="${item.responsable.nombreCorto}"></strong></span>
+ </div>
+
+ <!-- Dueño: respuestas recibidas -->
+ <div th:if="${esDueno and !#lists.isEmpty(item.respuestas)}" class="help-offers">
+  <div class="small fw-bold mb-2">Vecinos que respondieron</div>
+  <div class="offer-row" th:each="r : ${item.respuestas}">
+   <span class="provider-avatar" th:text="${#strings.substring(r.usuario.nombre,0,1)}">V</span>
+   <div class="flex-grow-1 small">
+    <strong th:text="${r.usuario.nombreCorto}"></strong>
+    <span class="muted"> · <span th:text="${r.usuario.ayudasCompletadas}">0</span> ayudas completadas</span>
+    <div class="muted" th:if="${r.mensaje != null}" th:text="${r.mensaje}"></div>
+    <div th:if="${r.estado == 'Aceptada' and r.usuario.telefono != null and !#strings.isEmpty(r.usuario.telefono)}" class="d-flex flex-wrap gap-1 mt-1">
+     <a class="btn btn-success btn-sm" th:href="'https://wa.me/' + ${r.usuario.telefonoWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a>
+     <a class="btn btn-outline-success btn-sm" th:href="'tel:' + ${r.usuario.telefono}"><i class="bi bi-telephone me-1"></i>Llamar</a>
+    </div>
+   </div>
+   <span th:if="${r.estado == 'Aceptada'}" class="badge text-bg-success">Aceptada</span>
+   <span th:if="${r.estado == 'Rechazada'}" class="badge text-bg-secondary">Rechazada</span>
+   <div th:if="${r.estado == 'Ofrecida' and item.estado != 'Resuelta'}" class="d-flex gap-1">
+    <form th:action="@{/ayuda/respuesta/{rid}/aceptar(rid=${r.id})}" method="post"><button class="btn btn-success btn-sm">Aceptar</button></form>
+    <form th:action="@{/ayuda/respuesta/{rid}/rechazar(rid=${r.id})}" method="post"><button class="btn btn-outline-secondary btn-sm">No</button></form>
+   </div>
+  </div>
+ </div>
+ <p th:if="${esDueno and #lists.isEmpty(item.respuestas) and item.estado != 'Resuelta'}" class="small muted mb-2"><i class="bi bi-hourglass-split me-1"></i>Aún no hay respuestas. Te avisaremos cuando un vecino se ofrezca.</p>
+
+ <!-- Dueño: cerrar la solicitud -->
+ <form th:if="${esDueno and item.estado != 'Resuelta'}" th:action="@{/ayuda/{t}/{id}/resolver(t=${tipo},id=${item.id})}" method="post" class="mb-2">
+  <button class="btn btn-success btn-sm" data-confirm="¿Confirmas que ya recibiste la ayuda? Se avisará a quienes te ayudaron."><i class="bi bi-check-circle me-1"></i>Marcar como resuelta</button>
+ </form>
+
+ <!-- Otro vecino: Puedo ayudar / Lo necesito -->
+ <div th:if="${uid != null and !esDueno and item.estado != 'Resuelta'}">
+  <div th:if="${mia == null}">
+   <button type="button" class="btn btn-bc btn-sm" data-bs-toggle="collapse" th:attr="data-bs-target='#resp-' + ${tipo} + '-' + ${item.id}"><i class="bi bi-hand-thumbs-up-fill me-1"></i><span th:text="${item.oferta} ? 'Lo necesito' : 'Puedo ayudar'">Puedo ayudar</span></button>
+   <div class="collapse mt-2" th:id="'resp-' + ${tipo} + '-' + ${item.id}">
+    <form th:action="@{/ayuda/{t}/{id}/responder(t=${tipo},id=${item.id})}" method="post" class="vstack gap-2" data-offline="true" data-offline-label="tu respuesta">
+     <textarea class="form-control form-control-sm" name="mensaje" rows="2" maxlength="300" placeholder="Mensaje opcional: ¿cuándo y cómo puedes coordinar?"></textarea>
+     <button class="btn btn-success btn-sm align-self-start">Enviar</button>
+    </form>
+   </div>
+  </div>
+  <div th:if="${mia != null}" class="my-answer small">
+   <i class="bi bi-chat-dots-fill me-1"></i>Tu respuesta: <strong th:text="${mia.estado}">Ofrecida</strong>
+   <span th:if="${mia.estado == 'Ofrecida'}" class="muted"> — esperando que el vecino responda.</span>
+   <div th:if="${mia.estado == 'Aceptada'}" class="mt-1">
+    <span class="d-block mb-1">¡Aceptaron tu ayuda! Ya pueden coordinar:</span>
+    <div class="d-flex flex-wrap gap-1" th:if="${item.usuario.telefono != null and !#strings.isEmpty(item.usuario.telefono)}">
+     <a class="btn btn-success btn-sm" th:href="'https://wa.me/' + ${item.usuario.telefonoWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>WhatsApp</a>
+     <a class="btn btn-outline-success btn-sm" th:href="'tel:' + ${item.usuario.telefono}"><i class="bi bi-telephone me-1"></i>Llamar</a>
+    </div>
+    <span th:if="${item.usuario.telefono == null or #strings.isEmpty(item.usuario.telefono)}" class="muted">El vecino aún no registró su teléfono; responde por aquí cuando te contacte.</span>
+   </div>
+  </div>
+ </div>
+ <a th:if="${uid == null and item.estado != 'Resuelta'}" class="btn btn-bc btn-sm" th:href="@{/login}"><i class="bi bi-box-arrow-in-right me-1"></i>Inicia sesión para <span th:text="${item.oferta} ? 'pedirlo' : 'ayudar'">ayudar</span></a>
+
+ <!-- Seguimiento -->
+ <div class="mt-2" th:if="${!#lists.isEmpty(item.eventos)}">
+  <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none" data-bs-toggle="collapse" th:attr="data-bs-target='#seg-' + ${tipo} + '-' + ${item.id}"><i class="bi bi-list-check me-1"></i>Ver seguimiento (<span th:text="${#lists.size(item.eventos)}">0</span>)</button>
+  <ul class="timeline collapse" th:id="'seg-' + ${tipo} + '-' + ${item.id}">
+   <li th:each="ev : ${item.eventos}"><span class="t" th:text="${ev.fecha}"></span><span th:text="${ev.texto}"></span></li>
+  </ul>
+ </div>
+</div>
+</body></html>

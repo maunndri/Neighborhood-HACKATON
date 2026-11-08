@@ -1,0 +1,12 @@
+<!doctype html><html lang="es" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Avisos')}"></head><body><div th:replace="~{fragments :: navbar}"></div><div th:replace="~{fragments :: sos-bubble}"></div>
+<main class="container py-4"><div class="mx-auto" style="max-width:720px">
+ <div class="notif-heading mb-4"><div><span class="eyebrow"><i class="bi bi-bell-fill me-1"></i>Centro de actividad</span><h1 class="section-title h3 mt-2 mb-1">Mis avisos</h1><p class="muted small mb-0">Respuestas y novedades sobre tus solicitudes y ayudas.</p></div><span class="notif-count" th:if="${!#sets.isEmpty(nuevas)}"><i class="bi bi-envelope-fill me-1"></i><span th:text="${#sets.size(nuevas)} + ' nuevos'"></span></span></div>
+ <div class="notif-list" th:if="${!#lists.isEmpty(notificaciones)}">
+ <article class="notif-item" th:each="n : ${notificaciones}" th:classappend="${nuevas.contains(n.id)} ? ' nueva'">
+  <span class="notif-icon"><i class="bi bi-chat-dots-fill"></i></span>
+  <div class="flex-grow-1 notif-copy"><div class="notif-message" th:text="${n.mensaje}"></div><div class="small muted notif-date"><i class="bi bi-clock me-1"></i><span th:text="${n.fecha}"></span><span class="notif-new-label" th:if="${nuevas.contains(n.id)}">Nuevo</span></div></div>
+  <a th:if="${n.enlace != null}" class="btn btn-sm btn-outline-success notif-action" th:href="@{${n.enlace}}">Ver detalle <i class="bi bi-arrow-up-right ms-1"></i></a>
+ </article>
+ </div>
+ <div class="empty-state" th:if="${#lists.isEmpty(notificaciones)}">No tienes avisos todavía.</div>
+</div></main><div th:replace="~{fragments :: footer}"></div><div th:replace="~{layout :: scripts}"></div></body></html>

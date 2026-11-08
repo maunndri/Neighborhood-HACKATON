@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Detalle')}"></head>
+<body>
+<div th:replace="~{fragments :: navbar}"></div><div th:replace="~{fragments :: sos-bubble}"></div>
+<main class="container py-4 detail-page">
+ <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div>
+ <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+ <a th:href="@{/servicios}" class="small text-decoration-none">← Volver a servicios</a>
+ <div class="row g-4 mt-1">
+  <div class="col-lg-7">
+   <article class="content-card" data-geo-card th:attr="data-lat=${s.latitud},data-lon=${s.longitud}">
+    <div class="detail-image"><img th:src="@{${s.imagenPortada}}" th:alt="${s.titulo}"></div>
+    <div class="d-flex flex-wrap gap-1 align-items-center mb-2">
+     <span class="badge text-bg-light" th:text="${s.categoria}"></span>
+     <span class="badge text-bg-light" th:text="${s.tipo == 'producto' ? 'Producto' : 'Servicio'}"></span>
+     <span th:replace="~{servicio-card :: nivel(${s})}"></span>
+     <span th:if="${s.oculto}" class="badge text-bg-danger">Oculto por moderación</span>
+    </div>
+    <h1 class="h3 fw-bold" th:text="${s.titulo}"></h1>
+    <p class="text-secondary" th:text="${s.descripcion}" style="white-space:pre-line"></p>
+    <div class="d-flex flex-wrap gap-3 small mb-3">
+     <span class="service-distance" data-distance><i class="bi bi-person-walking"></i> Calculando distancia…</span>
+     <span class="fw-bold text-success" th:if="${s.precio != null}" th:text="'Desde S/ ' + ${#numbers.formatDecimal(s.precio,1,2)}"></span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+     <a class="btn btn-bc" th:if="${s.contactoWhatsapp != null}" th:href="'https://wa.me/' + ${s.contactoWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Contactar por WhatsApp</a>
+     <a class="btn btn-outline-success" th:if="${s.contacto != null and !s.contacto.isEmpty()}" th:href="'tel:' + ${s.contacto}"><i class="bi bi-telephone me-1"></i>Llamar</a>
+     <button type="button" class="btn btn-outline-success" th:attr="data-wa-share='👍 Vecinos, miren este oficio recomendado en Neighborhood: ' + ${s.titulo} + ' (' + ${s.categoria} + ')',data-wa-url='/servicios/' + ${s.id}"><i class="bi bi-share-fill me-1"></i>Compartir en mi cuadra</button>
+     <form th:if="${usuarioIdActual != null and usuarioIdActual == s.usuario.id}" th:action="@{/servicios/{id}/eliminar(id=${s.id})}" method="post"><button class="btn btn-delete" data-confirm="¿Eliminar tu publicación? Esta acción no se puede deshacer."><i class="bi bi-trash3 me-1"></i>Eliminar</button></form>
+     <button type="button" class="btn btn-link btn-sm text-secondary" th:if="${usuarioIdActual == null or usuarioIdActual != s.usuario.id}" data-report-tipo="servicio" th:attr="data-report-id=${s.id}"><i class="bi bi-flag me-1"></i>Reportar</button>
+    </div>
+   </article>
+
+   <section class="content-card mt-3" th:if="${usuarioIdActual != null and usuarioIdActual != s.usuario.id}">
+    <h2 class="h5 fw-bold">Califica y da tu Visto Bueno</h2>
+    <p class="small muted mb-2">Tu calificación de 4 o 5 estrellas también cuenta como recomendación vecinal.</p>
+    <form th:action="@{/servicios/{id}/valorar(id=${s.id})}" method="post" class="vstack gap-2">
+     <div class="star-input" role="radiogroup" aria-label="Calificación">
+      <input type="radio" id="st5" name="puntuacion" value="5" required th:checked="${s.miCalificacion == 5}"><label for="st5" title="Excelente">★</label>
+      <input type="radio" id="st4" name="puntuacion" value="4" th:checked="${s.miCalificacion == 4}"><label for="st4" title="Muy bueno">★</label>
+      <input type="radio" id="st3" name="puntuacion" value="3" th:checked="${s.miCalificacion == 3}"><label for="st3" title="Bueno">★</label>
+      <input type="radio" id="st2" name="puntuacion" value="2" th:checked="${s.miCalificacion == 2}"><label for="st2" title="Regular">★</label>
+      <input type="radio" id="st1" name="puntuacion" value="1" th:checked="${s.miCalificacion == 1}"><label for="st1" title="Malo">★</label>
+     </div>
+     <textarea class="form-control" name="comentario" rows="3" maxlength="500" placeholder="Cuéntales a tus vecinos cómo fue tu experiencia (opcional)" th:text="${miComentario}"></textarea>
+     <button class="btn btn-bc align-self-start" th:text="${s.miCalificacion > 0} ? 'Actualizar mi opinión' : 'Publicar Visto Bueno y opinión'">Publicar Visto Bueno y opinión</button>
+    </form>
+   </section>
+   <div class="content-card mt-3 small" th:if="${usuarioIdActual == null}"><i class="bi bi-person-check me-1"></i><a th:href="@{/login}">Inicia sesión</a> para calificar y recomendar este servicio.</div>
+
+   <section class="content-card mt-3">
+    <h2 class="h5 fw-bold">Opiniones de vecinos <span class="muted fw-normal" th:text="'(' + ${#lists.size(opiniones)} + ')'"></span></h2>
+    <p class="small muted">Mostramos solo el nombre y la inicial del apellido para proteger la privacidad.</p>
+    <div class="opinion" th:each="o : ${opiniones}">
+     <div class="d-flex flex-wrap align-items-center gap-2">
+      <strong th:text="${o.autor}"></strong>
+      <span class="badge badge-rec" th:if="${o.mismaZona}">Vecino de la zona</span>
+      <span class="rating-stars" th:text="${'★'.repeat(o.puntuacion)} + ${'☆'.repeat(5 - o.puntuacion)}"></span>
+      <span class="small muted ms-auto" th:text="${o.fecha}"></span>
+     </div>
+     <p class="small mb-0 mt-1" th:if="${o.comentario != null}" th:text="${o.comentario}"></p>
+    </div>
+    <div class="empty-state py-3" th:if="${#lists.isEmpty(opiniones)}">Aún no hay opiniones. Si conoces este servicio, da tu Visto Bueno.</div>
+   </section>
+  </div>
+
+  <div class="col-lg-5">
+   <section class="content-card vb-panel">
+    <h2 class="h5 fw-bold"><i class="bi bi-people-fill me-2 text-success"></i>Visto Bueno Vecinal</h2>
+    <div class="vb-levels">
+     <div class="vb-level" th:classappend="${s.nivelVecinal == 'RECOMENDADO' or s.nivelVecinal == 'MUY'} ? ' on'"><i class="bi bi-hand-thumbs-up-fill"></i><div><strong>Recomendado por vecinos</strong><small>Al menos 1 recomendación (4 o 5 estrellas)</small></div></div>
+     <div class="vb-level" th:classappend="${s.nivelVecinal == 'MUY'} ? ' on'"><i class="bi bi-stars"></i><div><strong>Muy recomendado</strong><small>3 o más recomendaciones y promedio de 4 o más</small></div></div>
+     <div class="vb-level" th:classappend="${s.verificado} ? ' on'"><i class="bi bi-patch-check-fill"></i><div><strong>Identidad verificada</strong><small>Comprobada por un administrador</small></div></div>
+    </div>
+    <ul class="vb-facts small">
+     <li><strong th:text="${s.totalRecomendaciones}">0</strong> recomendaciones · <strong th:text="${s.totalCalificaciones}">0</strong> opiniones<span th:if="${s.totalCalificaciones > 0}"> · promedio <strong th:text="${s.promedioCalificacion}"></strong> ★</span></li>
+     <li th:if="${s.recomendacionesZona > 0}"><strong th:text="${s.recomendacionesZona}">0</strong> de ellas son de vecinos de su misma zona</li>
+     <li th:if="${s.ultimaRecomendacion != null}">Última recomendación: <strong th:text="${s.ultimaRecomendacion}"></strong></li>
+    </ul>
+    <p class="vb-note small"><i class="bi bi-info-circle me-1"></i>Una calificación es la opinión de vecinos; <strong>no es una verificación profesional</strong>. No asumas que alguien tiene un título o certificación si no está indicado.</p>
+   </section>
+
+   <section class="content-card mt-3">
+    <h2 class="h6 fw-bold">Sobre este vecino</h2>
+    <div class="d-flex align-items-center gap-3">
+     <span class="provider-avatar lg" th:text="${#strings.substring(s.usuario.nombre,0,1)}">V</span>
+     <div><strong th:text="${s.usuario.nombreCorto}"></strong><div class="small muted" th:text="${s.usuario.zona}"></div></div>
+    </div>
+    <div class="rep-grid mt-3">
+     <div><strong th:text="${reputacionDueno.promedio}">0</strong><span>promedio ★</span></div>
+     <div><strong th:text="${reputacionDueno.opiniones}">0</strong><span>opiniones</span></div>
+     <div><strong th:text="${reputacionDueno.recomendaciones}">0</strong><span>recomendaciones</span></div>
+     <div><strong th:text="${reputacionDueno.ayudasCompletadas}">0</strong><span>ayudas completadas</span></div>
+    </div>
+   </section>
+
+  </div>
+ </div>
+</main>
+<div th:replace="~{fragments :: footer}"></div><div th:replace="~{layout :: scripts}"></div>
+<script th:src="@{/js/distancia.js}"></script>
+</body></html>

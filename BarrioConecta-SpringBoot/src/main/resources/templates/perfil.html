@@ -1,0 +1,58 @@
+<!doctype html><html lang="es" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Mi perfil')}"></head><body><div th:replace="~{fragments :: navbar}"></div><div th:replace="~{fragments :: sos-bubble}"></div><div class="container py-4"><div class="mx-auto" style="max-width:900px">
+<div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div><div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+<div class="content-card mb-3">
+ <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-3">
+  <div class="d-flex align-items-center gap-3">
+   <div class="avatar" th:text="${#strings.substring(usuario.nombre,0,1).toUpperCase()}">V</div>
+   <div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+     <h1 class="h4 fw-bold mb-0" th:text="${usuario.nombre}"></h1>
+     <span class="badge-solidario" th:text="${usuario.insigniaSolidaria}"></span>
+    </div>
+    <div class="small muted"><span th:text="${usuario.zona}"></span> · Miembro desde <span th:text="${#temporals.format(usuario.creadoEn,'dd/MM/yyyy')}"></span></div>
+   </div>
+  </div>
+  <div class="time-bank-pill">
+   <i class="bi bi-clock-history"></i>
+   <div>
+    <strong th:text="${usuario.creditosSolidarios} + ' Créditos'">10 Créditos</strong>
+    <small>Banco de Tiempo Vecinal</small>
+   </div>
+  </div>
+ </div>
+ <h2 class="h6 fw-bold">Mi reputación vecinal y solidaria</h2>
+ <div class="rep-grid"><div><strong th:text="${reputacion.promedio}">0</strong><span>promedio ★</span></div><div><strong th:text="${reputacion.opiniones}">0</strong><span>opiniones recibidas</span></div><div><strong th:text="${reputacion.recomendaciones}">0</strong><span>recomendaciones</span></div><div><strong th:text="${reputacion.ayudasCompletadas}">0</strong><span>ayudas completadas</span></div></div>
+ <p class="small muted mt-2 mb-0">Se calcula con el Visto Bueno de tus vecinos y las ayudas sin dinero que completaste en la Cadena de Favores y Emergencias.</p>
+</div>
+
+<div class="content-card mb-3"><dl class="row mb-0"><dt class="col-sm-4">Correo</dt><dd class="col-sm-8" th:text="${usuario.correo}"></dd><dt class="col-sm-4">Teléfono</dt><dd class="col-sm-8" th:text="${usuario.telefono != null ? usuario.telefono : 'No registrado'}"></dd></dl></div>
+
+<section class="content-card mb-3 profile-activity">
+ <div class="activity-heading"><div><span class="eyebrow"><i class="bi bi-activity me-1"></i>Tu recorrido</span><h2 class="h5 fw-bold mt-2 mb-1">Mis actividades en Neighborhood</h2><p class="small muted mb-0">Consulta tus publicaciones y el estado de la ayuda que compartes con el barrio.</p></div></div>
+ <div class="activity-summary">
+  <div><i class="bi bi-tools"></i><strong th:text="${#lists.size(misServicios)}">0</strong><span>servicios</span></div>
+  <div><i class="bi bi-heart-fill"></i><strong th:text="${#lists.size(misFavores)}">0</strong><span>favores</span></div>
+  <div><i class="bi bi-hand-thumbs-up-fill"></i><strong th:text="${#lists.size(misRespuestas)}">0</strong><span>respuestas</span></div>
+ </div>
+ <div class="activity-section">
+  <h3><span class="activity-icon green"><i class="bi bi-tools"></i></span>Mis servicios y productos</h3>
+  <div class="activity-row" th:each="s : ${misServicios}"><a class="activity-title" th:href="@{/servicios/{id}(id=${s.id})}" th:text="${s.titulo}"></a><span th:replace="~{servicio-card :: nivel(${s})}"></span><span class="activity-meta" th:text="${s.totalCalificaciones} + ' opiniones'"></span></div>
+  <p class="activity-empty" th:if="${#lists.isEmpty(misServicios)}"><i class="bi bi-inbox me-2"></i>Todavía no tienes servicios o productos publicados.</p>
+ </div>
+ <div class="activity-section">
+  <h3><span class="activity-icon blue"><i class="bi bi-heart-fill"></i></span>Mis solicitudes y ofrecimientos</h3>
+  <div class="activity-row" th:each="f : ${misFavores}" th:if="${f.activo or f.estado == 'Resuelta'}"><a class="activity-title" th:href="@{/favores(vista=${f.oferta ? 'ofrezco' : 'necesito'})}" th:text="${f.titulo}"></a><span class="status-pill" th:classappend="${f.estado == 'Pendiente'} ? ' st-pend' : (${f.estado == 'En coordinación'} ? ' st-coord' : ' st-res')" th:text="${f.estado}"></span><span class="activity-meta" th:text="${f.vecinosCoordinando} + ' respuestas'"></span></div>
+  <p class="activity-empty" th:if="${#lists.isEmpty(misFavores)}"><i class="bi bi-inbox me-2"></i>Aún no tienes solicitudes ni ofrecimientos de ayuda.</p>
+ </div>
+ <div class="activity-section mb-0">
+  <h3><span class="activity-icon purple"><i class="bi bi-people-fill"></i></span>Ayudas en las que participé</h3>
+  <div class="activity-row" th:each="r : ${misRespuestas}"><a class="activity-title" th:href="${r.objetivoTipo == 'favor' ? '/favores' : '/emergencias'}" th:text="${r.objetivoTipo == 'favor' ? 'Favor #' + r.objetivoId : 'Emergencia #' + r.objetivoId}"></a><span class="badge text-bg-light" th:text="${r.estado}"></span></div>
+  <p class="activity-empty" th:if="${#lists.isEmpty(misRespuestas)}"><i class="bi bi-inbox me-2"></i>Aquí aparecerán tus respuestas a solicitudes de vecinos.</p>
+ </div>
+</section>
+
+<div class="content-card mb-3"><h2 class="h6 fw-bold">Mi número de contacto</h2><p class="small muted">Se comparte solo con el vecino cuya ayuda aceptes o que acepte la tuya.</p><form th:action="@{/perfil/contacto}" method="post" class="d-flex gap-2"><input class="form-control" type="tel" name="telefono" maxlength="40" placeholder="+51 999 999 999" th:value="${usuario.telefono}"><button class="btn btn-bc btn-sm">Guardar</button></form></div>
+
+<div class="content-card mb-3"><h2 class="h6 fw-bold">Mi ubicación de referencia</h2><p class="small muted">Se usa para mostrar publicaciones cercanas y avisarte de SOS a menos de 5 km. No se muestra tu domicilio exacto.</p><form th:action="@{/perfil/ubicacion}" method="post" class="vstack gap-2"><input id="latitud" name="latitud" type="hidden" th:value="${usuario.latitud}" required><input id="longitud" name="longitud" type="hidden" th:value="${usuario.longitud}" required><div class="location-picker"><div class="input-group mb-2"><input id="location-search" class="form-control" placeholder="Busca una dirección o lugar"><button id="location-search-btn" type="button" class="btn btn-outline-secondary">Buscar</button></div><div id="location-map" class="location-picker-map"></div><div class="d-flex flex-wrap gap-2 mt-2"><button type="button" id="use-location" class="btn btn-outline-secondary btn-sm">Usar mi ubicación actual</button><button class="btn btn-bc btn-sm">Guardar ubicación</button></div><div id="location-status" class="form-text"></div></div></form></div>
+
+</div></div><div th:replace="~{fragments :: footer}"></div><link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"><script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script><script th:src="@{/js/location-picker.js}"></script><div th:replace="~{layout :: scripts}"></div></body></html>

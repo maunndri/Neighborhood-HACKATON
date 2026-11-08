@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<nav th:fragment="navbar" class="bc-navbar bc-sidebar" th:classappend="${modoEmergenciaGlobal} ? ' navbar-emergency'" th:attr="data-logged=${session.usuarioId != null},data-notif-url=@{/api/notificaciones/resumen}" aria-label="Navegación principal">
+ <a class="navbar-brand fw-bold d-flex align-items-center gap-2" th:href="@{/}">
+  <img class="brand-logo-mark" th:src="@{/images/brand/neighborhood-mark.svg}" alt="Neighborhood">
+  <span class="brand-wordmark">
+   <span class="brand-title">Neighbor<span class="brand-accent">hood</span></span>
+   <small class="brand-subtitle" th:text="${modoEmergenciaGlobal} ? 'RED DE EMERGENCIA' : 'TU BARRIO CONECTADO'">TU BARRIO CONECTADO</small>
+  </span>
+ </a>
+ <div class="sidebar-mode d-flex flex-column gap-2">
+  <a th:href="@{/modo/toggle}" class="btn-mode-pill" th:classappend="${modoEmergenciaGlobal} ? ' active-emergency' : ' active-normal'" th:title="${modoEmergenciaGlobal} ? 'Toca para volver a Modo Normal' : 'Toca para simular o activar Modo Emergencia'"><span class="mode-dot"></span><span class="mode-text" th:text="${modoEmergenciaGlobal} ? 'MODO ALERTA' : 'MODO NORMAL'"></span><i class="bi bi-arrow-repeat ms-1 opacity-75"></i></a>
+  <button type="button" class="btn-a11y-pill" data-toggle-senior title="Aumenta el tamaño de letra y botones para lectura fácil">
+   <i class="bi bi-eyeglasses"></i>
+   <span data-senior-label>Modo Adulto Mayor</span>
+  </button>
+ </div>
+ <ul class="sidebar-links">
+  <li><a th:href="@{/}"><i class="bi bi-house-door-fill"></i><span>Inicio</span></a></li>
+  <li><a th:href="@{/servicios}"><i class="bi bi-tools"></i><span>Servicios</span></a></li>
+  <li><a th:href="@{/favores}"><i class="bi bi-heart-fill"></i><span>Cadena de favores</span></a></li>
+  <li><a th:href="@{/emergencias}" th:classappend="${alertaSosGlobal} ? ' has-alert' : ''"><i class="bi bi-heart-pulse-fill"></i><span th:if="${alertaSosGlobal}" class="badge bg-danger">SOS</span><span>Emergencias</span></a></li>
+  <li><a th:href="@{/mapa}"><i class="bi bi-map-fill"></i><span>Mapa vecinal</span></a></li>
+  <li><a href="#" data-open-tutorial><i class="bi bi-question-circle-fill"></i><span>¿Cómo funciona?</span></a></li>
+  <li th:if="${session.usuarioRol == 'ADMIN'}"><a th:href="@{/admin}"><i class="bi bi-shield-check"></i><span>Moderación</span></a></li>
+ </ul>
+ <div class="sidebar-account">
+  <a class="sidebar-publish" href="#" data-bs-toggle="offcanvas" data-bs-target="#publishSheet"><i class="bi bi-plus-lg"></i> Publicar (3 clics)</a>
+  <a th:if="${session.usuarioId != null}" th:href="@{/perfil}"><i class="bi bi-person-circle"></i> Mi perfil</a>
+  <a th:if="${session.usuarioId != null}" th:href="@{/notificaciones}" class="sidebar-notifications"><i class="bi bi-bell-fill"></i> Avisos <span id="bc-notif-badge" class="bc-badge" th:classappend="${noLeidas == null or noLeidas == 0} ? ' d-none'" th:text="${noLeidas}">0</span></a>
+  <a th:if="${session.usuarioId != null}" th:href="@{/logout}"><i class="bi bi-box-arrow-right"></i> Salir</a>
+  <a th:if="${session.usuarioId == null}" th:href="@{/login}"><i class="bi bi-box-arrow-in-right"></i> Ingresar</a>
+  <a th:if="${session.usuarioId == null}" th:href="@{/registro}"><i class="bi bi-person-plus"></i> Crear cuenta</a>
+ </div>
+</nav>
+
+<!-- Botón SOS flotante + barra inferior móvil + hoja "Publicar" + Modal SOS Inteligente -->
+<div th:fragment="sos-bubble">
+ <div id="bc-offline-banner" class="bc-offline-banner d-none" role="status"><i class="bi bi-wifi-off me-2"></i>Sin conexión. Puedes consultar datos guardados; las publicaciones se enviarán al reconectar.</div>
+ 
+ <div class="sos-floating-wrap">
+  <button type="button" id="global-sos-button" class="sos-floating-button" data-bs-toggle="modal" data-bs-target="#sosModal" th:attr="data-logged=${session.usuarioId != null},data-sos-url=@{/api/sos},data-login-url=@{/login}">
+   <span class="sos-floating-pulse"></span>
+   <i class="bi bi-exclamation-triangle-fill"></i>
+   <span class="sos-floating-label">SOS</span>
+  </button>
+  <div id="global-sos-status" class="sos-floating-status" role="status" aria-live="polite">Auxilio 1-clic</div>
+ </div>
+
+ <!-- Barra de navegación móvil inferior -->
+ <nav class="bc-bottomnav d-lg-none" aria-label="Navegación principal">
+  <a th:href="@{/servicios}"><i class="bi bi-tools"></i><span>Servicios</span></a>
+  <a th:href="@{/favores}"><i class="bi bi-heart-fill"></i><span>Favores</span></a>
+  <button type="button" class="bc-bottom-plus" data-bs-toggle="offcanvas" data-bs-target="#publishSheet" aria-label="Publicar"><i class="bi bi-plus-lg"></i></button>
+  <a th:href="@{/emergencias}" th:classappend="${alertaSosGlobal} ? ' text-danger fw-bold' : ''"><i class="bi bi-heart-pulse-fill"></i><span>Ayuda</span></a>
+  <a th:href="@{/mapa}"><i class="bi bi-map-fill"></i><span>Mapa</span></a>
+ </nav>
+
+ <!-- Hoja inferior "Publicar en 3 clics" -->
+ <div class="offcanvas offcanvas-bottom bc-sheet" tabindex="-1" id="publishSheet" aria-labelledby="publishSheetTitle">
+  <div class="offcanvas-header pb-2 border-bottom">
+   <div>
+    <h2 class="h5 fw-bold mb-0" id="publishSheetTitle">¿Qué necesitas compartir en Neighborhood?</h2>
+    <small class="text-secondary">Publica en máximo 3 clics con ubicación aproximada automática</small>
+   </div>
+   <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Cerrar"></button>
+  </div>
+  <div class="offcanvas-body pt-3">
+   <div class="row g-2 sheet-grid">
+    <div class="col-6 col-md-3"><a class="sheet-option" th:href="@{/servicios/nuevo}"><i class="bi bi-tools text-success"></i><strong>Oficio o producto</strong><small>Gasfitería, clases, comida</small></a></div>
+    <div class="col-6 col-md-3"><a class="sheet-option blue" th:href="@{/favores/nuevo(tipo='solicito')}"><i class="bi bi-hand-index-thumb-fill text-primary"></i><strong>Necesito un favor</strong><small>Herramienta o apoyo sin dinero</small></a></div>
+    <div class="col-6 col-md-3"><a class="sheet-option purple" th:href="@{/favores/nuevo(tipo='ofrezco')}"><i class="bi bi-gift-fill text-purple"></i><strong>Quiero ayudar</strong><small>Prestar, donar o enseñar</small></a></div>
+    <div class="col-6 col-md-3"><a class="sheet-option red" th:href="@{/emergencias/nuevo}"><i class="bi bi-shield-exclamation text-danger"></i><strong>Emergencia crítica</strong><small>Ayuda humanitaria urgente</small></a></div>
+   </div>
+  </div>
+ </div>
+
+ <!-- Modal SOS Inteligente de 1 Clic con Vulnerabilidades -->
+ <div class="modal fade" id="sosModal" tabindex="-1" aria-labelledby="sosModalTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+   <div class="modal-content bc-modal border-0 shadow-lg">
+    <div class="modal-header bg-danger text-white border-0 pb-3">
+     <div class="d-flex align-items-center gap-2">
+      <div class="sos-modal-icon"><i class="bi bi-exclamation-triangle-fill"></i></div>
+      <div>
+       <h1 class="h5 fw-bold mb-0 text-white" id="sosModalTitle">Alerta SOS Comunitaria · Neighborhood</h1>
+       <small class="opacity-90">Aviso geolocalizado a vecinos en un radio de 5 km</small>
+      </div>
+     </div>
+     <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+    </div>
+    <div class="modal-body p-4">
+     <div class="official-alert-box mb-3">
+      <i class="bi bi-telephone-outbound-fill fs-4 text-danger me-2"></i>
+      <div class="small">
+       <strong>¿Peligro de vida o delito en curso?</strong><br>
+       Llama primero: <a href="tel:105" class="fw-bold text-danger text-decoration-underline">105 Policía</a> · 
+       <a href="tel:116" class="fw-bold text-danger text-decoration-underline">116 Bomberos</a> · 
+       <a href="tel:106" class="fw-bold text-danger text-decoration-underline">106 SAMU</a>
+      </div>
+     </div>
+
+     <label class="form-label fw-bold mb-2">1. Selecciona la situación de auxilio:</label>
+     <div class="row g-2 mb-3" id="sos-category-chips">
+      <div class="col-6">
+       <button type="button" class="sos-chip-btn active" data-cat="Adulto mayor o persona vulnerable">
+        <i class="bi bi-person-wheelchair text-danger"></i>
+        <span>Adulto Mayor / Vulnerable</span>
+       </button>
+      </div>
+      <div class="col-6">
+       <button type="button" class="sos-chip-btn" data-cat="Atención médica y primeros auxilios">
+        <i class="bi bi-heart-pulse-fill text-danger"></i>
+        <span>Herido / Salud urgente</span>
+       </button>
+      </div>
+      <div class="col-6">
+       <button type="button" class="sos-chip-btn" data-cat="Alimentos y agua potable">
+        <i class="bi bi-droplet-fill text-primary"></i>
+        <span>Falta de agua o víveres</span>
+       </button>
+      </div>
+      <div class="col-6">
+       <button type="button" class="sos-chip-btn" data-cat="Sin electricidad / Paciente dependiente">
+        <i class="bi bi-lightning-charge-fill text-warning"></i>
+        <span>Sin luz / Oxígeno</span>
+       </button>
+      </div>
+      <div class="col-12">
+       <button type="button" class="sos-chip-btn" data-cat="Transporte solidario y rescate">
+        <i class="bi bi-shield-fill-exclamation text-danger"></i>
+        <span>Rescate / Peligro inmediato</span>
+       </button>
+      </div>
+     </div>
+
+     <div class="mb-3">
+      <label class="form-label small fw-bold text-secondary mb-1">2. Detalle breve o referencia (opcional):</label>
+      <input type="text" id="sos-detail-input" class="form-control form-control-sm" placeholder="Ej: Manzana B lote 14, piso 2, adulto mayor necesita agua">
+     </div>
+
+     <div class="d-grid gap-2">
+      <button type="button" id="btn-trigger-sos-confirmed" class="btn btn-danger btn-lg fw-bold py-3 shadow">
+       <i class="bi bi-broadcast me-2"></i>ENVIAR SOS A MIS VECINOS
+      </button>
+      <button type="button" id="btn-sos-whatsapp" class="btn btn-outline-success btn-sm fw-bold">
+       <i class="bi bi-whatsapp me-1"></i>Compartir alerta en WhatsApp de mi cuadra
+      </button>
+     </div>
+     <div id="sos-modal-feedback" class="small text-center mt-2 text-secondary"></div>
+    </div>
+   </div>
+  </div>
+ </div>
+</div>
+
+<footer th:fragment="footer" class="bc-footer mt-5">
+ <div class="container py-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+  <div>
+   <div class="d-flex align-items-center gap-2 flex-wrap">
+    <img th:src="@{/images/brand/neighborhood-mark.svg}" alt="Neighborhood" width="30" height="30" class="rounded-2">
+    <strong class="fs-5">Neighborhood</strong>
+    <span class="badge bg-success-subtle text-success border border-success-subtle">Economía Local, Trueque Solidario & Soporte Crítico</span>
+   </div>
+   <div class="small text-white-50 mt-1">Plataforma de hiperproximidad vecinal sin transporte mayor, con Visto Bueno Vecinal y evolución ante emergencias.</div>
+   <div class="d-flex flex-wrap gap-3 mt-2 small">
+    <a href="#" data-open-tutorial class="text-white text-decoration-underline"><i class="bi bi-play-circle me-1"></i>Tutorial: ¿Cómo funciona?</a>
+    <a href="#" data-toggle-senior class="text-white text-decoration-underline"><i class="bi bi-eyeglasses me-1"></i>Activar/Desactivar Modo Adulto Mayor</a>
+   </div>
+  </div>
+  <div class="small text-white-50 col-md-5 text-md-end">
+   Red comunitaria solidaria para soporte mutuo vecinal. Las recomendaciones pertenecen a vecinos de la zona y no sustituyen certificaciones técnicas. Ante emergencias mayores llama a: 
+   <a class="text-white fw-bold" href="tel:105">105 (Policía)</a>, <a class="text-white fw-bold" href="tel:116">116 (Bomberos)</a> o <a class="text-white fw-bold" href="tel:106">106 (SAMU)</a>.
+  </div>
+ </div>
+</footer>
+</body></html>

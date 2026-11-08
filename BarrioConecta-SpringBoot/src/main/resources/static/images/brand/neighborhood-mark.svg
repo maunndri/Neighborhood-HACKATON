@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="t">
+  <title id="t">Neighborhood</title>
+  <defs>
+    <linearGradient id="nb-bg" x1="6" y1="4" x2="58" y2="62" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#1fae86"/>
+      <stop offset=".55" stop-color="#11785f"/>
+      <stop offset="1" stop-color="#0a4a3d"/>
+    </linearGradient>
+    <linearGradient id="nb-heart" x1="25" y1="18" x2="39" y2="30" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ffb547"/>
+      <stop offset="1" stop-color="#f26b3a"/>
+    </linearGradient>
+  </defs>
+  <!-- Fondo -->
+  <rect x="2" y="2" width="60" height="60" rx="17" fill="url(#nb-bg)"/>
+  <circle cx="51" cy="13" r="12" fill="#ffffff" opacity=".07"/>
+  <!-- Casa que también es un pin de ubicación: el barrio en el mapa -->
+  <path d="M32 9.5 51.5 25.2c.6.5.9 1.2.9 2V36c0 9.6-8.4 15.9-19.2 22.3a2.3 2.3 0 0 1-2.4 0C20 51.9 11.6 45.6 11.6 36v-8.8c0-.8.3-1.5.9-2L32 9.5Z" fill="#ffffff"/>
+  <!-- Corazón en el techo: un hogar solidario -->
+  <path d="M32 29.8c-4.56-3-6.84-5.34-6.84-7.74 0-1.98 1.5-3.42 3.3-3.42 1.5 0 2.7.84 3.54 2.16.84-1.32 2.04-2.16 3.54-2.16 1.8 0 3.3 1.44 3.3 3.42 0 2.4-2.28 4.74-6.84 7.74Z" fill="url(#nb-heart)"/>
+  <!-- Dos vecinos, uno junto al otro -->
+  <circle cx="25.8" cy="35.6" r="3.4" fill="#0f6e57"/>
+  <path d="M20 47.2v-1.4c0-3.3 2.6-5.8 5.8-5.8s5.8 2.5 5.8 5.8v1.4Z" fill="#0f6e57"/>
+  <circle cx="38.2" cy="35.6" r="3.4" fill="#1a9a77"/>
+  <path d="M32.4 47.2v-1.4c0-3.3 2.6-5.8 5.8-5.8s5.8 2.5 5.8 5.8v1.4Z" fill="#1a9a77"/>
+</svg>

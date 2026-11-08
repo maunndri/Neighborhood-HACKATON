@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<body>
+<!-- Insignias de confianza: Visto Bueno Vecinal (2 niveles) + verificación de administrador -->
+<span th:fragment="nivel(s)">
+ <span th:if="${s.nivelVecinal == 'MUY'}" class="badge badge-muy" title="Acumula varias recomendaciones positivas de vecinos"><i class="bi bi-stars me-1"></i>Muy recomendado</span>
+ <span th:if="${s.nivelVecinal == 'RECOMENDADO'}" class="badge badge-rec" title="Tiene recomendaciones de vecinos"><i class="bi bi-hand-thumbs-up-fill me-1"></i>Recomendado por vecinos</span>
+ <span th:if="${s.verificado}" class="badge badge-ver" title="Un administrador comprobó la identidad o el recurso. No certifica títulos profesionales."><i class="bi bi-patch-check-fill me-1"></i>Identidad verificada</span>
+</span>
+
+<article th:fragment="card(s, uid)" class="service-horizontal" data-geo-card th:attr="data-lat=${s.latitud},data-lon=${s.longitud}">
+ <a class="service-thumb" th:href="@{/servicios/{id}(id=${s.id})}" aria-label="Ver detalle">
+  <img th:src="@{${s.imagenPortada}}" th:alt="${s.titulo}" loading="lazy">
+ </a>
+ <div class="service-horizontal-content">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+   <div class="d-flex flex-wrap gap-1 align-items-center">
+    <span class="badge text-bg-light" th:text="${s.categoria}"></span>
+    <span class="badge text-bg-light" th:text="${s.tipo == 'producto' ? 'Producto' : 'Servicio'}"></span>
+    <span th:replace="~{servicio-card :: nivel(${s})}"></span>
+   </div>
+   <span class="service-distance" data-distance><i class="bi bi-person-walking"></i> Calculando…</span>
+  </div>
+  <h2 class="h5 fw-bold mt-2 mb-1"><a class="text-reset text-decoration-none" th:href="@{/servicios/{id}(id=${s.id})}" th:text="${s.titulo}"></a></h2>
+  <p class="small text-secondary service-description" th:text="${s.descripcion}"></p>
+  <div class="d-flex flex-wrap align-items-center gap-3 service-provider-line">
+   <span class="provider-avatar" th:text="${#strings.substring(s.usuario.nombre,0,1)}">V</span>
+   <div class="small">
+    <strong class="d-block"><span th:text="${s.usuario.nombreCorto}"></span> <span class="badge-solidario" th:text="${s.usuario.insigniaSolidaria}"></span></strong>
+    <span class="muted" th:text="${s.usuario.zona}"></span>
+   </div>
+   <div class="community-rating ms-sm-auto" th:if="${s.totalCalificaciones > 0}"><span class="rating-stars">★</span><strong th:text="${s.promedioCalificacion}"></strong><span class="muted" th:text="'(' + ${s.totalCalificaciones} + ' opiniones)'"></span></div>
+   <div class="small muted ms-sm-auto" th:if="${s.totalCalificaciones == 0}">Sin opiniones todavía</div>
+  </div>
+  <div class="vb-line small mt-2" th:if="${s.totalRecomendaciones > 0}">
+   <i class="bi bi-patch-check-fill me-1"></i><span th:text="${s.totalRecomendaciones} + (${s.totalRecomendaciones == 1} ? ' vecino lo recomienda' : ' vecinos lo recomiendan')"></span><span th:if="${s.recomendacionesZona > 0}" th:text="' (' + ${s.recomendacionesZona} + ' de su zona)'"></span><span class="muted" th:if="${s.ultimaRecomendacion != null}" th:text="' · última: ' + ${s.ultimaRecomendacion}"></span>
+  </div>
+  <div class="d-flex flex-wrap align-items-center gap-2 mt-3">
+   <div class="fw-bold text-success me-auto" th:if="${s.precio != null}" th:text="'Desde S/ ' + ${#numbers.formatDecimal(s.precio,1,2)}"></div>
+   <span class="me-auto" th:if="${s.precio == null}"></span>
+   <button type="button" class="btn btn-light border btn-sm" title="Compartir en el grupo de WhatsApp vecinal" th:attr="data-wa-share='👍 Vecinos, recomiendo en Neighborhood: ' + ${s.titulo} + ' (' + ${s.categoria} + ') por ' + ${s.usuario.nombreCorto},data-wa-url='/servicios/' + ${s.id}"><i class="bi bi-share-fill text-success"></i></button>
+   <a class="btn btn-outline-success btn-sm" th:href="@{/servicios/{id}(id=${s.id})}"><i class="bi bi-hand-thumbs-up me-1"></i>Visto bueno</a>
+   <a class="btn btn-bc btn-sm" th:if="${s.contactoWhatsapp != null}" th:href="'https://wa.me/' + ${s.contactoWhatsapp}" target="_blank" rel="noopener"><i class="bi bi-whatsapp me-1"></i>Contactar</a>
+  </div>
+ </div>
+</article>
+</body></html>

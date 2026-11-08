@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Inicio')}"></head>
+<body th:classappend="${modoEmergencia} ? ' body-mode-emergency' : ''">
+<div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: sos-bubble}"></div>
+
+<main class="container py-4 py-lg-5 home-page">
+ <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+  <span th:text="${mensaje}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+ </div>
+ <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <span th:text="${error}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+ </div>
+
+ <!-- ========================================================================
+      ESTADO 1: MODO EMERGENCIA ACTIVADO (EVOLUCIÓN ANTE CRISIS / SOPORTE VECINAL)
+      ======================================================================== -->
+ <div th:if="${modoEmergencia}" class="emergency-mode-container mb-5">
+  <div class="emergency-hero mb-4 p-4 p-md-5 rounded-4 shadow-sm text-white">
+   <div class="row g-4 align-items-center">
+    <div class="col-lg-8">
+     <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+      <span class="badge bg-white text-danger fw-bold px-3 py-2 fs-6 rounded-pill">
+       <i class="bi bi-broadcast me-1"></i> NEIGHBORHOOD · RED DE RESPUESTA VECINAL ACTIVA
+      </span>
+      <a th:href="@{/modo/toggle}" class="btn btn-sm btn-outline-light rounded-pill px-3">
+       <i class="bi bi-arrow-left-right me-1"></i> Salir a Modo Normal
+      </a>
+     </div>
+     <h1 class="display-6 fw-bold mb-2">🚨 Tablero de Emergencia y Ayuda Humanitaria</h1>
+     <p class="lead mb-4 opacity-90">Neighborhood ha evolucionado a modo de contingencia: priorizamos auxilio a vecinos vulnerables, distribución de agua, botiquines, energía y refugio a distancia caminable.</p>
+     
+     <div class="d-flex flex-wrap gap-2">
+      <button type="button" class="btn btn-light text-danger fw-bold px-4 py-2" data-bs-toggle="modal" data-bs-target="#sosModal">
+       <i class="bi bi-exclamation-triangle-fill me-1"></i> Reportar SOS / Vulnerabilidad
+      </button>
+      <a th:href="@{/emergencias/nuevo}" class="btn btn-warning text-dark fw-bold px-4 py-2">
+       <i class="bi bi-hand-index-thumb-fill me-1"></i> Solicitar Ayuda Específica
+      </a>
+      <a th:href="@{/mapa}" class="btn btn-outline-light px-4 py-2">
+       <i class="bi bi-map-fill me-1"></i> Ver Mapa de Afectados
+      </a>
+     </div>
+    </div>
+    <div class="col-lg-4 d-none d-lg-block">
+     <img th:src="@{/images/photos/emergencia-brigada.jpg}" alt="Brigada vecinal entregando agua y botiquín" class="img-fluid rounded-4 shadow border border-2 border-light border-opacity-25" style="max-height:240px;width:100%;object-fit:cover">
+    </div>
+   </div>
+  </div>
+
+  <!-- Números de emergencia inmediata -->
+  <section class="hotlines mb-4" aria-label="Líneas de emergencia">
+   <a class="hotline" href="tel:105"><i class="bi bi-shield-fill"></i><strong>105</strong><span>Policía</span></a>
+   <a class="hotline" href="tel:116"><i class="bi bi-fire"></i><strong>116</strong><span>Bomberos</span></a>
+   <a class="hotline" href="tel:106"><i class="bi bi-heart-pulse-fill"></i><strong>106</strong><span>SAMU Ambulancia</span></a>
+   <a class="hotline" href="tel:115"><i class="bi bi-cloud-lightning-rain-fill"></i><strong>115</strong><span>Defensa Civil</span></a>
+  </section>
+
+  <!-- Personas que requieren asistencia urgente ahora -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+   <div>
+    <h2 class="h4 fw-bold mb-1 text-danger"><i class="bi bi-person-exclamation me-2"></i>Vecinos que necesitan auxilio prioritario</h2>
+    <p class="small text-secondary mb-0">Atiende a adultos mayores, heridos o personas sin recursos básicos en tu manzana.</p>
+   </div>
+   <a th:href="@{/emergencias}" class="btn btn-sm btn-outline-danger">Ver todo el centro de ayuda →</a>
+  </div>
+
+  <div class="row g-3 mb-5" data-geo-list>
+   <div class="col-md-6 col-lg-4" th:each="e : ${emergenciasActivas}" data-geo-card th:attr="data-lat=${e.latitud},data-lon=${e.longitud}">
+    <div class="card h-100 border-2 shadow-sm rounded-4" th:classappend="${e.sos} ? ' border-danger bg-danger-subtle' : ' border-warning-subtle bg-white'">
+     <div class="card-body d-flex flex-column">
+      <div class="d-flex justify-content-between align-items-center gap-1 mb-2 flex-wrap">
+       <span class="badge" th:classappend="${e.sos} ? ' bg-danger text-white' : ' bg-warning text-dark'" th:text="${e.categoria}"></span>
+       <span class="status-pill st-pend" th:text="${e.estado}"></span>
+       <span class="service-distance ms-auto" data-distance><i class="bi bi-person-walking"></i> …</span>
+      </div>
+      <h3 class="h5 fw-bold card-title mb-2" th:text="${e.titulo}"></h3>
+      <p class="card-text small text-secondary flex-grow-1" th:text="${e.descripcion}"></p>
+      <div class="small fw-semibold mb-3">
+       <i class="bi bi-geo-alt-fill text-danger me-1"></i>
+       <span th:text="${e.usuario.nombreCorto}"></span>
+       <span th:if="${e.usuario.zona != null}" th:text="' · ' + ${e.usuario.zona}"></span>
+      </div>
+      <div class="d-flex gap-2">
+       <a th:href="@{/emergencias#emergencia-} + ${e.id}" class="btn btn-danger btn-sm fw-bold flex-grow-1">
+        <i class="bi bi-hand-thumbs-up me-1"></i> Ofrecer Ayuda
+       </a>
+       <button type="button" class="btn btn-outline-danger btn-sm" title="Difundir en WhatsApp Vecinal" th:attr="data-wa-share='🚨 AUXILIO VECINAL en Neighborhood: ' + ${e.titulo} + ' (' + ${e.usuario.nombreCorto} + '). ¡Apoyemos vecinos!',data-wa-url='/emergencias#emergencia-' + ${e.id}">
+        <i class="bi bi-whatsapp"></i>
+       </button>
+      </div>
+     </div>
+    </div>
+   </div>
+   <div class="col-12" th:if="${#lists.isEmpty(emergenciasActivas)}">
+    <div class="alert alert-success rounded-4 p-4 text-center">
+     <i class="bi bi-check-circle-fill fs-3 text-success mb-2 d-block"></i>
+     <strong>No hay emergencias críticas pendientes en este momento.</strong><br>
+     Si conoces a un vecino en vulnerabilidad, puedes registrar el reporte.
+    </div>
+   </div>
+  </div>
+
+  <!-- Recursos Críticos y Brigadas Comunitarias -->
+  <div class="d-flex justify-content-between align-items-center mb-3">
+   <div>
+    <h2 class="h4 fw-bold mb-1"><i class="bi bi-box2-heart-fill text-success me-2"></i>Recursos Críticos Comunitarios (Economía Solidaria)</h2>
+    <p class="small text-secondary mb-0">Puntos de agua, generadores de luz, botiquines y brigadas vecinales disponibles.</p>
+   </div>
+   <a th:href="@{/emergencias/grupos}" class="text-success text-decoration-none small fw-bold">Ver directorio completo →</a>
+  </div>
+
+  <div class="row g-3 mb-4">
+   <div class="col-md-6 col-lg-3" th:each="g : ${recursosCriticos}">
+    <div class="card h-100 rounded-4 border-1 shadow-sm">
+     <div class="card-body d-flex flex-column">
+      <div class="badge bg-success-subtle text-success align-self-start mb-2" th:text="${g.categoria}"></div>
+      <h3 class="h6 fw-bold mb-1" th:text="${g.nombre}"></h3>
+      <p class="small text-secondary flex-grow-1 mb-2" th:text="${g.descripcion}"></p>
+      <div class="small text-muted mb-3" th:if="${g.disponibilidad != null}">
+       <i class="bi bi-clock me-1"></i> <span th:text="${g.disponibilidad}"></span>
+      </div>
+      <a th:if="${g.telefonoWhatsapp != null}" th:href="'https://wa.me/' + ${g.telefonoWhatsapp}" target="_blank" class="btn btn-outline-success btn-sm w-100">
+       <i class="bi bi-whatsapp me-1"></i> Contactar Recurso
+      </a>
+     </div>
+    </div>
+   </div>
+  </div>
+ </div>
+
+
+ <!-- ========================================================================
+      ESTADO 2: MODO DÍA A DÍA (ECONOMÍA LOCAL Y VECINAL DE HIPERPROXIMIDAD)
+      ======================================================================== -->
+ <div th:unless="${modoEmergencia}" class="normal-mode-container">
+  <!-- Banner de aviso si hay alertas SOS activas en el fondo -->
+  <div th:if="${alertaSos}" class="alert alert-danger rounded-4 shadow-sm mb-4 d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2">
+   <div>
+    <strong><i class="bi bi-exclamation-triangle-fill me-2"></i>ALERTA EN EL BARRIO:</strong>
+    <span>Hay solicitudes de auxilio urgentes activas en la zona.</span>
+   </div>
+   <a th:href="@{/modo/toggle}" class="btn btn-danger btn-sm fw-bold">
+    <i class="bi bi-shield-exclamation me-1"></i> Cambiar a Modo Emergencia
+   </a>
+  </div>
+
+  <section class="hero home-hero mb-4">
+   <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 w-100" style="max-width:920px">
+    <div class="hero-kicker mb-0"><i class="bi bi-person-walking me-1"></i> Hiperproximidad a pie · Visto Bueno Vecinal · 0 Pasajes</div>
+    <div class="d-flex gap-2">
+     <button type="button" data-open-tutorial class="badge bg-white text-success border-0 py-2 px-3 rounded-pill fw-semibold shadow-sm">
+      <i class="bi bi-play-circle-fill me-1"></i> ¿Cómo funciona?
+     </button>
+     <a th:href="@{/modo/toggle}" class="badge bg-white text-dark text-decoration-none py-2 px-3 rounded-pill fw-semibold shadow-sm" title="Activa la simulación de crisis">
+      <i class="bi bi-toggle-off text-danger me-1"></i> Simular Modo Emergencia
+     </a>
+    </div>
+   </div>
+   <h1 class="display-5 fw-bold mb-2 mt-2">Tu barrio, a pocos pasos y siempre unido</h1>
+   <p class="lead mb-4" style="max-width:780px">Encuentra oficios y productos recomendados por tus propios vecinos sin gastar en transporte, intercambia favores sin dinero y coordina ayuda inmediata en emergencias.</p>
+   
+   <form class="search-box home-search d-flex gap-2" th:action="@{/servicios}" method="get">
+    <i class="bi bi-search text-secondary align-self-center ms-2"></i>
+    <input class="form-control border-0 shadow-none" name="q" placeholder="Busca gasfitero, carpintería, electricista, clases, comida…" aria-label="Buscar servicios">
+    <button class="btn btn-bc px-4">Buscar <i class="bi bi-arrow-right ms-1"></i></button>
+   </form>
+
+   <div class="hero-chips mt-3">
+    <a class="chip" th:each="c : ${catServicio}" th:if="${c != 'Otro'}" th:href="@{/servicios(categoria=${c})}" th:text="${c}"></a>
+   </div>
+  </section>
+
+  <!-- Atajos de acceso rápido -->
+  <div class="row g-3 mb-4 home-shortcuts">
+   <div class="col-6 col-lg-3"><a class="feature-card shortcut-card" th:href="@{/servicios}"><div class="feature-icon"><i class="bi bi-tools"></i></div><div><h3>Servicios cercanos</h3><p class="small muted mb-0">Con Visto Bueno Vecinal</p></div></a></div>
+   <div class="col-6 col-lg-3"><a class="feature-card shortcut-card purple" th:href="@{/favores}"><div class="feature-icon purple"><i class="bi bi-heart-fill"></i></div><div><h3>Cadena de favores</h3><p class="small muted mb-0">Banco de tiempo sin dinero</p></div></a></div>
+   <div class="col-6 col-lg-3"><a class="feature-card shortcut-card yellow" th:href="@{/servicios(tipo='producto')}"><div class="feature-icon yellow"><i class="bi bi-basket-fill"></i></div><div><h3>Productos locales</h3><p class="small muted mb-0">A pie en tu manzana</p></div></a></div>
+   <div class="col-6 col-lg-3"><a class="feature-card shortcut-card red" th:href="@{/emergencias}"><div class="feature-icon red"><i class="bi bi-heart-pulse-fill"></i></div><div><h3>Centro de ayuda</h3><p class="small muted mb-0">Soporte y emergencias</p></div></a></div>
+  </div>
+
+  <!-- Métricas comunitarias -->
+  <section class="stats-strip mb-4" aria-label="Actividad del barrio">
+   <div class="stat"><strong th:text="${totalServicios}">0</strong><span>oficios y productos locales</span></div>
+   <div class="stat"><strong th:text="${totalFavores}">0</strong><span>intercambios sin dinero</span></div>
+   <div class="stat"><strong th:text="${totalAlertas}">0</strong><span>solicitudes de auxilio</span></div>
+   <div class="stat ok"><strong th:text="${totalResueltos}">0</strong><span>ayudas vecinales resueltas</span></div>
+  </section>
+
+  <!-- Galería de los 3 Pilares Reales de Neighborhood -->
+  <section class="row g-3 mb-4">
+   <div class="col-md-4">
+    <a th:href="@{/servicios}" class="pillar-photo-card text-decoration-none">
+     <img th:src="@{/images/photos/servicios-oficios.jpg}" alt="Oficios del barrio con Visto Bueno Vecinal" loading="lazy">
+     <div class="pillar-photo-overlay">
+      <span class="pillar-tag"><i class="bi bi-patch-check-fill me-1"></i>Economía Local</span>
+      <h3 class="h5 fw-bold mb-1 text-white">Oficios con Visto Bueno Vecinal</h3>
+      <p class="small text-white-50 mb-0">Gasfiteros, electricistas y profesores avalados por vecinos de tu misma cuadra.</p>
+     </div>
+    </a>
+   </div>
+   <div class="col-md-4">
+    <a th:href="@{/favores}" class="pillar-photo-card text-decoration-none">
+     <img th:src="@{/images/photos/favores-herramientas.jpg}" alt="Préstamo de herramientas y cadena de favores" loading="lazy">
+     <div class="pillar-photo-overlay">
+      <span class="pillar-tag purple"><i class="bi bi-arrow-left-right me-1"></i>Sin Dinero</span>
+      <h3 class="h5 fw-bold mb-1 text-white">Préstamos, Trueque y Banco de Tiempo</h3>
+      <p class="small text-white-50 mb-0">Presta una escalera o taladro, comparte movilidad y suma Créditos Solidarios.</p>
+     </div>
+    </a>
+   </div>
+   <div class="col-md-4">
+    <a th:href="@{/emergencias}" class="pillar-photo-card text-decoration-none">
+     <img th:src="@{/images/photos/comunidad-adultos.jpg}" alt="Apoyo a vecinos vulnerables y adultos mayores" loading="lazy">
+     <div class="pillar-photo-overlay">
+      <span class="pillar-tag red"><i class="bi bi-heart-pulse-fill me-1"></i>Resiliencia Vecinal</span>
+      <h3 class="h5 fw-bold mb-1 text-white">Soporte a Vecinos Vulnerables</h3>
+      <p class="small text-white-50 mb-0">Evoluciona en 1 clic ante emergencias para asistir a adultos mayores y compartir agua.</p>
+     </div>
+    </a>
+   </div>
+  </section>
+
+  <!-- Botones de Acción Inmediata: Pedir / Dar ayuda sin dinero -->
+  <section class="row g-3 mb-4">
+   <div class="col-md-6"><a class="cta-help need" th:href="@{/favores/nuevo(tipo='solicito')}"><span class="cta-help-icon"><i class="bi bi-hand-index-thumb-fill"></i></span><div><span class="cta-kicker">PEDIR APOYO SIN DINERO</span><strong>Necesito ayuda</strong><span>Solicita una herramienta prestada, movilidad solidaria o una mano puntual.</span></div><i class="bi bi-arrow-right-circle-fill go"></i></a></div>
+   <div class="col-md-6"><a class="cta-help give" th:href="@{/favores/nuevo(tipo='ofrezco')}"><span class="cta-help-icon"><i class="bi bi-gift-fill"></i></span><div><span class="cta-kicker">SUMAR AL BANCO DE TIEMPO</span><strong>Quiero ayudar</strong><span>Ofrece tu tiempo, presta herramientas o comparte lo que sabes hacer.</span></div><i class="bi bi-arrow-right-circle-fill go"></i></a></div>
+  </section>
+
+  <!-- Directorio de Oficios con Visto Bueno Vecinal -->
+  <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+   <div>
+    <h2 class="section-title h4 mb-1">Los más recomendados por tus vecinos</h2>
+    <p class="small muted mb-0">Validado mediante <strong>Visto Bueno Vecinal</strong> (opiniones reales de residentes de la misma zona).</p>
+   </div>
+   <div class="d-flex gap-2 align-items-center">
+    <button type="button" class="btn btn-sm btn-outline-success" data-walkable-filter><i class="bi bi-person-walking me-1"></i>Solo a pie (≤ 15 min)</button>
+    <button type="button" class="btn btn-sm btn-outline-success" data-distance-sort><i class="bi bi-sort-down me-1"></i>Más cerca</button>
+    <a th:href="@{/servicios}" class="text-success text-decoration-none small fw-bold ms-1">Ver todos →</a>
+   </div>
+  </div>
+  
+  <div class="distance-help small text-secondary mb-3" id="distance-status">
+   <i class="bi bi-person-walking text-success me-1"></i>Calculando minutos a pie y ahorro en transporte…
+  </div>
+
+  <div class="service-list home-service-list" data-geo-list th:if="${!#lists.isEmpty(servicios)}">
+   <th:block th:each="s : ${servicios}"><article th:replace="~{servicio-card :: card(${s}, ${session.usuarioId})}"></article></th:block>
+  </div>
+  <div class="empty-state" th:if="${#lists.isEmpty(servicios)}">Todavía no hay servicios publicados. ¡Sé el primero en compartir uno!</div>
+
+  <!-- Banner de preparación comunitaria -->
+  <div class="emergency-banner mt-5 d-flex flex-column flex-md-row align-items-md-center justify-content-between gap-3">
+   <div>
+    <div class="fw-bold text-danger fs-5"><i class="bi bi-shield-exclamation me-2"></i>Evolución ante Emergencias y Desastres</div>
+    <div class="small text-secondary">Ante un sismo, corte de agua o apagón, Neighborhood transforma su interfaz al <strong>Modo Emergencia</strong> para coordinar brigadas, botiquines y ayuda a vecinos vulnerables.</div>
+   </div>
+   <div class="d-flex gap-2 flex-shrink-0">
+    <a th:href="@{/modo/toggle}" class="btn btn-outline-danger">Simular Modo Emergencia</a>
+    <a th:href="@{/emergencias}" class="btn btn-danger">Ir al centro de ayuda</a>
+   </div>
+  </div>
+ </div>
+
+</main>
+<div th:replace="~{fragments :: footer}"></div>
+<div th:replace="~{layout :: scripts}"></div>
+<script th:src="@{/js/distancia.js}"></script>
+</body>
+</html>

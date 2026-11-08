@@ -1,0 +1,19 @@
+<!doctype html><html lang="es" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Sin conexión')}"></head><body><div th:replace="~{fragments :: navbar}"></div><div th:replace="~{fragments :: sos-bubble}"></div>
+<main class="container py-5"><div class="mx-auto text-center" style="max-width:640px">
+ <div class="feature-icon red mx-auto mb-3"><i class="bi bi-wifi-off"></i></div>
+ <h1 class="h3 fw-bold">Estás sin conexión</h1>
+ <p class="muted">Esta página no se guardó antes. Aún puedes usar lo básico:</p>
+ <div class="hotlines my-3">
+  <a class="hotline" href="tel:105"><i class="bi bi-shield-fill"></i><strong>105</strong><span>Policía</span></a>
+  <a class="hotline" href="tel:116"><i class="bi bi-fire"></i><strong>116</strong><span>Bomberos</span></a>
+  <a class="hotline" href="tel:106"><i class="bi bi-heart-pulse-fill"></i><strong>106</strong><span>Ambulancia</span></a>
+  <a class="hotline" href="tel:115"><i class="bi bi-cloud-lightning-rain-fill"></i><strong>115</strong><span>Defensa Civil</span></a>
+ </div>
+ <div class="d-grid gap-2 mb-3">
+  <a class="btn btn-bc" th:href="@{/servicios}">Ver servicios guardados</a>
+  <a class="btn btn-outline-success" th:href="@{/favores}">Ver cadena de favores guardada</a>
+  <a class="btn btn-outline-success" th:href="@{/emergencias}">Ver centro de ayuda guardado</a>
+ </div>
+ <p class="small muted">Si publicas una solicitud o un SOS sin internet, se guardará en tu teléfono y se enviará solo al volver la conexión.</p>
+ <button class="btn btn-link" onclick="location.reload()">Reintentar</button>
+</div></main><div th:replace="~{fragments :: footer}"></div><div th:replace="~{layout :: scripts}"></div></body></html>

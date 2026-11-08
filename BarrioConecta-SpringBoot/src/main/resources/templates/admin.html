@@ -1,0 +1,46 @@
+<!doctype html><html lang="es" xmlns:th="http://www.thymeleaf.org"><head th:replace="~{layout :: head('Moderación')}"></head><body><div th:replace="~{fragments :: navbar}"></div><div th:replace="~{fragments :: sos-bubble}"></div>
+<main class="container py-4 admin-page">
+ <div th:if="${mensaje}" class="alert alert-success" th:text="${mensaje}"></div><div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
+ <h1 class="section-title h3 mb-1"><i class="bi bi-shield-check me-2 text-success"></i>Panel de moderación</h1>
+ <p class="muted">Revisa denuncias, oculta publicaciones sospechosas y verifica identidades o recursos. «Verificar» no certifica títulos profesionales.</p>
+
+ <h2 class="h5 fw-bold mt-4">Denuncias pendientes <span class="badge text-bg-danger" th:text="${#lists.size(denuncias)}">0</span></h2>
+ <div class="admin-row" th:each="d : ${denuncias}">
+  <div class="flex-grow-1"><span class="badge text-bg-light" th:text="${d.tipo}"></span> <strong th:text="${d.titulo}"></strong><div class="small muted"><span th:text="${d.motivo}"></span> — <span th:text="${d.usuario.nombreCorto}"></span></div></div>
+  <form th:action="@{/admin/ocultar/{t}/{id}(t=${d.tipo},id=${d.objetivoId})}" method="post"><button class="btn btn-sm btn-outline-danger">Ocultar</button></form>
+  <form th:action="@{/admin/denuncias/{id}/resolver(id=${d.id})}" method="post"><button class="btn btn-sm btn-success">Marcar revisada</button></form>
+ </div>
+ <p class="small muted" th:if="${#lists.isEmpty(denuncias)}">No hay denuncias pendientes.</p>
+
+ <h2 class="h5 fw-bold mt-4">Servicios y productos</h2>
+ <div class="admin-row" th:each="s : ${servicios}">
+  <div class="flex-grow-1"><a th:href="@{/servicios/{id}(id=${s.id})}" th:text="${s.titulo}"></a> <span class="small muted" th:text="'· ' + ${s.usuario.nombreCorto}"></span> <span class="badge text-bg-danger" th:if="${s.oculto}">Oculto</span> <span class="badge badge-ver" th:if="${s.verificado}">Verificado</span></div>
+  <form th:action="@{/admin/verificar/servicio/{id}(id=${s.id})}" method="post"><button class="btn btn-sm btn-outline-success" th:text="${s.verificado} ? 'Quitar verificación' : 'Verificar'">Verificar</button></form>
+  <form th:action="@{/admin/ocultar/servicio/{id}(id=${s.id})}" method="post"><button class="btn btn-sm btn-outline-secondary" th:text="${s.oculto} ? 'Mostrar' : 'Ocultar'">Ocultar</button></form>
+ </div>
+
+ <h2 class="h5 fw-bold mt-4">Recursos de apoyo</h2>
+ <div class="admin-row" th:each="g : ${recursos}">
+  <div class="flex-grow-1"><strong th:text="${g.nombre}"></strong> <span class="small muted" th:text="'· ' + ${g.usuario.nombreCorto}"></span> <span class="badge text-bg-danger" th:if="${g.oculto}">Oculto</span> <span class="badge badge-ver" th:if="${g.verificado}">Verificado</span></div>
+  <form th:action="@{/admin/verificar/recurso/{id}(id=${g.id})}" method="post"><button class="btn btn-sm btn-outline-success" th:text="${g.verificado} ? 'Quitar verificación' : 'Verificar'">Verificar</button></form>
+  <form th:action="@{/admin/ocultar/recurso/{id}(id=${g.id})}" method="post"><button class="btn btn-sm btn-outline-secondary" th:text="${g.oculto} ? 'Mostrar' : 'Ocultar'">Ocultar</button></form>
+ </div>
+
+ <h2 class="h5 fw-bold mt-4">Favores</h2>
+ <div class="admin-row" th:each="f : ${favores}">
+  <div class="flex-grow-1"><span th:text="${f.titulo}"></span> <span class="small muted" th:text="'· ' + ${f.usuario.nombreCorto} + ' · ' + ${f.estado}"></span> <span class="badge text-bg-danger" th:if="${f.oculto}">Oculto</span></div>
+  <form th:action="@{/admin/ocultar/favor/{id}(id=${f.id})}" method="post"><button class="btn btn-sm btn-outline-secondary" th:text="${f.oculto} ? 'Mostrar' : 'Ocultar'">Ocultar</button></form>
+ </div>
+
+ <h2 class="h5 fw-bold mt-4">Emergencias</h2>
+ <div class="admin-row" th:each="e : ${emergencias}">
+  <div class="flex-grow-1"><span th:text="${e.titulo}"></span> <span class="small muted" th:text="'· ' + ${e.usuario.nombreCorto} + ' · ' + ${e.estado}"></span> <span class="badge text-bg-danger" th:if="${e.oculto}">Oculto</span></div>
+  <form th:action="@{/admin/ocultar/emergencia/{id}(id=${e.id})}" method="post"><button class="btn btn-sm btn-outline-secondary" th:text="${e.oculto} ? 'Mostrar' : 'Ocultar'">Ocultar</button></form>
+ </div>
+
+ <h2 class="h5 fw-bold mt-4">Vecinos</h2>
+ <div class="admin-row" th:each="v : ${vecinos}">
+  <div class="flex-grow-1"><strong th:text="${v.nombre}"></strong> <span class="small muted" th:text="'· ' + ${v.correo} + ' · ' + ${v.rol}"></span> <span class="badge text-bg-danger" th:if="${v.suspendido}">Suspendido</span></div>
+  <form th:if="${!v.admin}" th:action="@{/admin/usuarios/{id}/suspender(id=${v.id})}" method="post"><button class="btn btn-sm btn-outline-danger" th:text="${v.suspendido} ? 'Reactivar' : 'Suspender'" data-confirm="¿Cambiar el estado de esta cuenta?">Suspender</button></form>
+ </div>
+</main><div th:replace="~{fragments :: footer}"></div><div th:replace="~{layout :: scripts}"></div></body></html>

@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Reportar necesidad')}"></head>
+<body>
+<div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: sos-bubble}"></div>
+
+<div class="container py-4">
+ <div class="content-card mx-auto shadow-sm" style="max-width:760px">
+  <div class="official-warning mb-3">
+   <i class="bi bi-exclamation-triangle-fill"></i>
+   <div>
+    <strong>Si hay peligro inmediato para la vida, llama al <a href="tel:105">105</a>, <a href="tel:116">116</a> o <a href="tel:106">106</a>.</strong>
+    <span>Este formulario pide ayuda y soporte a tus vecinos; no sustituye a las autoridades oficiales.</span>
+   </div>
+  </div>
+
+  <h1 class="h3 fw-bold text-danger mb-1">Reportar necesidad urgente o vulnerabilidad</h1>
+  <p class="muted mb-4">Describe qué apoyo requieres. Tu reporte se geolocalizará en el mapa vecinal y los vecinos podrán coordinar contigo.</p>
+
+  <form th:action="@{/emergencias/nuevo}" method="post" class="row g-3" data-offline="true" data-offline-label="tu solicitud">
+   <div class="col-12">
+    <label class="form-label fw-bold">Tipo de situación o vulnerabilidad</label>
+    <select class="form-select" name="categoria" id="categoria-select" required>
+     <option value="">-- Selecciona el tipo de apoyo --</option>
+     <option th:each="c : ${catEmergencia}" th:value="${c}" th:text="${c}"></option>
+    </select>
+   </div>
+
+   <div class="col-12">
+    <label class="form-label fw-bold">Título del reporte</label>
+    <input class="form-control" name="titulo" placeholder="Ej: Adulto mayor solo necesita bidón de agua potable" required>
+   </div>
+
+   <div class="col-12">
+    <label class="form-label fw-bold">Descripción detallada</label>
+    <textarea class="form-control" name="descripcion" rows="3" placeholder="Indica detalles importantes: número de personas afectadas, si hay niños o enfermos, y referencias claras..." required></textarea>
+   </div>
+
+   <div class="col-12">
+    <label class="form-label fw-bold">Ubicación aproximada en el barrio</label>
+    <input id="latitud" type="hidden" name="latitud" th:value="${latitudActual}">
+    <input id="longitud" type="hidden" name="longitud" th:value="${longitudActual}">
+    <div class="location-picker">
+     <div class="input-group mb-2">
+      <input id="location-search" class="form-control" placeholder="Busca una calle o referencia cercana">
+      <button id="location-search-btn" type="button" class="btn btn-outline-secondary">Buscar</button>
+     </div>
+     <div id="location-map" class="location-picker-map"></div>
+     <div class="d-flex flex-wrap gap-2 mt-2 align-items-center">
+      <button type="button" id="use-location" class="btn btn-outline-secondary btn-sm">
+       <i class="bi bi-crosshair me-1"></i> Usar mi ubicación GPS actual
+      </button>
+      <span id="location-status" class="form-text">Toca el mapa para mover el punto de auxilio.</span>
+     </div>
+    </div>
+   </div>
+
+   <div class="col-12 pt-2 d-flex gap-2">
+    <button type="submit" class="btn btn-danger fw-bold px-4">
+     <i class="bi bi-send-fill me-1"></i> Publicar reporte de auxilio
+    </button>
+    <a th:href="@{/emergencias}" class="btn btn-outline-secondary">Cancelar</a>
+   </div>
+  </form>
+ </div>
+</div>
+
+<div th:replace="~{fragments :: footer}"></div>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script th:src="@{/js/location-picker.js}"></script>
+<div th:replace="~{layout :: scripts}"></div>
+</body>
+</html>
