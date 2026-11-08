@@ -35,7 +35,7 @@
    <section class="content-card mt-3" th:if="${usuarioIdActual != null and usuarioIdActual != s.usuario.id}">
     <h2 class="h5 fw-bold">Califica y da tu Visto Bueno</h2>
     <p class="small muted mb-2">Tu calificación de 4 o 5 estrellas también cuenta como recomendación vecinal.</p>
-    <form th:action="@{/servicios/{id}/valorar(id=${s.id})}" method="post" class="vstack gap-2">
+    <form th:action="@{/servicios/{id}/valorar(id=${s.id})}" method="post" class="vstack gap-2" data-offline="true" data-offline-label="tu calificación y Visto Bueno">
      <div class="star-input" role="radiogroup" aria-label="Calificación">
       <input type="radio" id="st5" name="puntuacion" value="5" required th:checked="${s.miCalificacion == 5}"><label for="st5" title="Excelente">★</label>
       <input type="radio" id="st4" name="puntuacion" value="4" th:checked="${s.miCalificacion == 4}"><label for="st4" title="Muy bueno">★</label>

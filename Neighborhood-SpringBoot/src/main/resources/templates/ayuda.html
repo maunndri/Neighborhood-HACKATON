@@ -33,15 +33,15 @@
    <span th:if="${r.estado == 'Aceptada'}" class="badge text-bg-success">Aceptada</span>
    <span th:if="${r.estado == 'Rechazada'}" class="badge text-bg-secondary">Rechazada</span>
    <div th:if="${r.estado == 'Ofrecida' and item.estado != 'Resuelta'}" class="d-flex gap-1">
-    <form th:action="@{/ayuda/respuesta/{rid}/aceptar(rid=${r.id})}" method="post"><button class="btn btn-success btn-sm">Aceptar</button></form>
-    <form th:action="@{/ayuda/respuesta/{rid}/rechazar(rid=${r.id})}" method="post"><button class="btn btn-outline-secondary btn-sm">No</button></form>
+    <form th:action="@{/ayuda/respuesta/{rid}/aceptar(rid=${r.id})}" method="post" data-offline="true" data-offline-label="tu aceptación de ayuda"><button class="btn btn-success btn-sm">Aceptar</button></form>
+    <form th:action="@{/ayuda/respuesta/{rid}/rechazar(rid=${r.id})}" method="post" data-offline="true" data-offline-label="tu respuesta"><button class="btn btn-outline-secondary btn-sm">No</button></form>
    </div>
   </div>
  </div>
  <p th:if="${esDueno and #lists.isEmpty(item.respuestas) and item.estado != 'Resuelta'}" class="small muted mb-2"><i class="bi bi-hourglass-split me-1"></i>Aún no hay respuestas. Te avisaremos cuando un vecino se ofrezca.</p>
 
  <!-- Dueño: cerrar la solicitud -->
- <form th:if="${esDueno and item.estado != 'Resuelta'}" th:action="@{/ayuda/{t}/{id}/resolver(t=${tipo},id=${item.id})}" method="post" class="mb-2">
+ <form th:if="${esDueno and item.estado != 'Resuelta'}" th:action="@{/ayuda/{t}/{id}/resolver(t=${tipo},id=${item.id})}" method="post" class="mb-2" data-offline="true" data-offline-label="el cierre de tu solicitud">
   <button class="btn btn-success btn-sm" data-confirm="¿Confirmas que ya recibiste la ayuda? Se avisará a quienes te ayudaron."><i class="bi bi-check-circle me-1"></i>Marcar como resuelta</button>
  </form>
 

@@ -21,9 +21,11 @@
    </div>
    <div th:if="${error}" class="alert alert-danger" th:text="${error}"></div>
    <form th:action="@{/login}" method="post" class="auth-form">
+    <input type="hidden" name="latitud" id="login-lat">
+    <input type="hidden" name="longitud" id="login-lng">
     <label class="auth-input"><i class="bi bi-envelope-fill"></i><input type="email" name="correo" placeholder="Correo electrónico" aria-label="Correo electrónico" required></label>
     <label class="auth-input"><i class="bi bi-lock-fill"></i><input type="password" name="password" placeholder="Contraseña" aria-label="Contraseña" required></label>
-    <div class="auth-options"><span><i class="bi bi-shield-lock me-1"></i>Acceso seguro</span><span>Tu barrio te espera</span></div>
+    <div class="auth-options"><span><i class="bi bi-geo-alt-fill text-success me-1"></i><span id="login-geo-status">Sincronizando tu ubicación actual para el mapa…</span></span></div>
     <button class="btn btn-bc btn-lg w-100 auth-submit">Ingresar <i class="bi bi-arrow-right ms-1"></i></button>
    </form>
    <p class="auth-register">¿Aún no tienes cuenta? <a th:href="@{/registro}">Crear cuenta gratis</a></p>
@@ -31,4 +33,25 @@
  </section>
 </main>
 <div th:replace="~{fragments :: footer}"></div><div th:replace="~{layout :: scripts}"></div>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+ const latEl = document.getElementById('login-lat'), lngEl = document.getElementById('login-lng'), st = document.getElementById('login-geo-status');
+ try {
+  const cache = JSON.parse(localStorage.getItem('bc_pos') || 'null');
+  if (cache && Number.isFinite(cache.lat) && Number.isFinite(cache.lon)) {
+   latEl.value = cache.lat; lngEl.value = cache.lon;
+   if (st) st.textContent = 'Ubicación lista para el mapa vecinal';
+  }
+ } catch (e) {}
+ if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+   latEl.value = pos.coords.latitude; lngEl.value = pos.coords.longitude;
+   try { localStorage.setItem('bc_pos', JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, ts: Date.now() })); } catch (e) {}
+   if (st) st.textContent = 'Ubicación GPS actual detectada para el mapa';
+  }, () => {
+   if (st && !latEl.value) st.textContent = 'Se usará la ubicación registrada en tu perfil';
+  }, { enableHighAccuracy: false, timeout: 6000, maximumAge: 120000 });
+ }
+});
+</script>
 </body></html>

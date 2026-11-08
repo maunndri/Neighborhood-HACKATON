@@ -20,6 +20,7 @@
   <li><a th:href="@{/}"><i class="bi bi-house-door-fill"></i><span>Inicio</span></a></li>
   <li><a th:href="@{/servicios}"><i class="bi bi-tools"></i><span>Servicios</span></a></li>
   <li><a th:href="@{/favores}"><i class="bi bi-heart-fill"></i><span>Cadena de favores</span></a></li>
+  <li><a th:href="@{/comunidades}"><i class="bi bi-whatsapp text-success"></i><span>Grupos WhatsApp</span></a></li>
   <li><a th:href="@{/emergencias}" th:classappend="${alertaSosGlobal} ? ' has-alert' : ''"><i class="bi bi-heart-pulse-fill"></i><span th:if="${alertaSosGlobal}" class="badge bg-danger">SOS</span><span>Emergencias</span></a></li>
   <li><a th:href="@{/mapa}"><i class="bi bi-map-fill"></i><span>Mapa vecinal</span></a></li>
   <li><a href="#" data-open-tutorial><i class="bi bi-question-circle-fill"></i><span>¿Cómo funciona?</span></a></li>

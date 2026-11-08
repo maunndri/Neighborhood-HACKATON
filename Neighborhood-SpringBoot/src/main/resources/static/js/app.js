@@ -184,6 +184,10 @@ document.addEventListener('DOMContentLoaded', () => {
  document.getElementById('bc-confirm-accept').addEventListener('click', () => {
   if (!pendingForm) return;
   const form = pendingForm; pendingForm = null; modal.hide();
+  if (!navigator.onLine && form.hasAttribute('data-offline') && window.BC && window.BC.encolar) {
+   window.BC.encolar(form.action, new URLSearchParams(new FormData(form)).toString(), form.dataset.offlineLabel || 'tu acción');
+   return;
+  }
   HTMLFormElement.prototype.submit.call(form);
  });
  modalNode.addEventListener('hidden.bs.modal', () => { pendingForm = null; });
@@ -195,7 +199,7 @@ document.addEventListener('DOMContentLoaded', () => {
  if (!botones.length || !window.bootstrap) return;
  const nodo = document.createElement('div');
  nodo.className = 'modal fade'; nodo.tabIndex = -1; nodo.setAttribute('aria-hidden', 'true');
- nodo.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 bc-modal"><form method="post" action="/reportar"><div class="modal-body p-4"><h2 class="h5 fw-bold">Reportar publicación</h2><p class="small text-secondary">Un administrador de Neighborhood la revisará. Úsalo si parece falsa, peligrosa o abusiva.</p><input type="hidden" name="tipo" id="bc-rep-tipo"><input type="hidden" name="id" id="bc-rep-id"><select class="form-select mb-2" id="bc-rep-motivo-sel" aria-label="Motivo"><option>Parece un engaño o estafa</option><option>Información falsa</option><option>Contenido ofensivo</option><option>Pone en riesgo a alguien</option><option>Otro motivo</option></select><textarea class="form-control" id="bc-rep-detalle" rows="2" maxlength="250" placeholder="Detalle (opcional)"></textarea><input type="hidden" name="motivo" id="bc-rep-motivo"><div class="d-flex justify-content-end gap-2 mt-3"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-danger">Enviar reporte</button></div></div></form></div></div>`;
+ nodo.innerHTML = `<div class="modal-dialog modal-dialog-centered"><div class="modal-content border-0 bc-modal"><form method="post" action="/reportar" data-offline="true" data-offline-label="tu reporte de moderación"><div class="modal-body p-4"><h2 class="h5 fw-bold">Reportar publicación</h2><p class="small text-secondary">Un administrador de Neighborhood la revisará. Úsalo si parece falsa, peligrosa o abusiva.</p><input type="hidden" name="tipo" id="bc-rep-tipo"><input type="hidden" name="id" id="bc-rep-id"><select class="form-select mb-2" id="bc-rep-motivo-sel" aria-label="Motivo"><option>Parece un engaño o estafa</option><option>Información falsa</option><option>Contenido ofensivo</option><option>Pone en riesgo a alguien</option><option>Otro motivo</option></select><textarea class="form-control" id="bc-rep-detalle" rows="2" maxlength="250" placeholder="Detalle (opcional)"></textarea><input type="hidden" name="motivo" id="bc-rep-motivo"><div class="d-flex justify-content-end gap-2 mt-3"><button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button><button class="btn btn-danger">Enviar reporte</button></div></div></form></div></div>`;
  document.body.appendChild(nodo);
  const modal = new bootstrap.Modal(nodo);
  botones.forEach(b => b.addEventListener('click', () => {

@@ -2,12 +2,28 @@ document.addEventListener('DOMContentLoaded', () => {
  const el = document.getElementById('map'); if (!el || !window.L) return;
  const cfg = window.BARRIO_MAP_CONFIG || {}, status = document.getElementById('map-status'), radius = document.getElementById('map-radius');
  const needsBox = document.getElementById('map-needs');
- let center = (Number.isFinite(cfg.latitud) && Number.isFinite(cfg.longitud)) ? [cfg.latitud, cfg.longitud] : [-16.458, -71.5885];
- let personal = Number.isFinite(cfg.latitud) && Number.isFinite(cfg.longitud), firstLoad = true, items = [];
+ let center = (Number.isFinite(cfg.latitud) && Number.isFinite(cfg.longitud)) ? [cfg.latitud, cfg.longitud] : null;
+ if (!center) {
+  try {
+   const posCache = JSON.parse(localStorage.getItem('bc_pos') || 'null');
+   if (posCache && Number.isFinite(posCache.lat) && Number.isFinite(posCache.lon)) {
+    center = [posCache.lat, posCache.lon];
+   }
+  } catch (e) {}
+ }
+ let personal = Array.isArray(center);
+ if (!center) center = [-16.4580, -71.5885];
+ let firstLoad = true, items = [], userMarker = null, userCircle = null;
  const seenSos = new Set();
- const map = L.map('map').setView(center, personal ? 14 : 12);
+ const map = L.map('map').setView(center, personal ? 14 : 13);
  L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '&copy; OpenStreetMap' }).addTo(map);
  const markers = L.layerGroup().addTo(map);
+ const pintarMiUbicacion = (coords, texto = '📍 Tu ubicación actual') => {
+  if (userMarker) map.removeLayer(userMarker);
+  if (userCircle) map.removeLayer(userCircle);
+  userCircle = L.circle(coords, { radius: 110, color: '#147d64', fillOpacity: .10 }).addTo(map);
+  userMarker = L.marker(coords).addTo(map).bindPopup(texto);
+ };
  const colors = { servicio: '#147d64', necesito: '#2563eb', ofrezco: '#7c3aed', emergencia: '#dc3545', recurso: '#f59e0b' };
  const safe = v => String(v ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
  const capa = p => p.clase === 'favor' ? (p.tipo === 'ofrezco' ? 'ofrezco' : 'necesito') : p.clase;
@@ -70,8 +86,15 @@ document.addEventListener('DOMContentLoaded', () => {
  function locate() {
   if (!navigator.geolocation) { status.textContent = 'Tu navegador no admite geolocalización.'; return; }
   status.textContent = 'Solicitando permiso de ubicación...';
-  navigator.geolocation.getCurrentPosition(pos => { center = [pos.coords.latitude, pos.coords.longitude]; personal = true; map.setView(center, 14); L.marker(center).addTo(map).bindPopup('Tu ubicación de referencia').openPopup(); load(); },
-   () => status.textContent = 'No se obtuvo tu ubicación. Configúrala desde Mi perfil.', { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
+  navigator.geolocation.getCurrentPosition(pos => {
+   center = [pos.coords.latitude, pos.coords.longitude];
+   personal = true;
+   try { localStorage.setItem('bc_pos', JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, ts: Date.now() })); } catch (e) {}
+   map.setView(center, 15);
+   pintarMiUbicacion(center, '📍 Tu ubicación GPS actual');
+   userMarker.openPopup();
+   load();
+  }, () => status.textContent = 'No se obtuvo tu ubicación GPS. Mostrando la ubicación de tu cuenta.', { enableHighAccuracy: true, timeout: 10000, maximumAge: 60000 });
  }
  document.getElementById('map-my-location')?.addEventListener('click', locate);
  radius?.addEventListener('change', load);
@@ -82,6 +105,17 @@ document.addEventListener('DOMContentLoaded', () => {
   status.textContent = permission === 'granted' ? 'Avisos activados. Mantén esta página abierta para recibir alertas.' : 'No se concedió permiso para notificaciones.';
  });
  document.getElementById('map-enable-notifications')?.classList.remove('d-none');
- if (personal) L.circle(center, { radius: 90, color: '#147d64', fillOpacity: .08 }).addTo(map).bindPopup('Tu zona de referencia');
+ if (personal) {
+  pintarMiUbicacion(center, '📍 Tu ubicación registrada');
+ } else if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(pos => {
+   center = [pos.coords.latitude, pos.coords.longitude];
+   personal = true;
+   try { localStorage.setItem('bc_pos', JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, ts: Date.now() })); } catch (e) {}
+   map.setView(center, 14);
+   pintarMiUbicacion(center, '📍 Tu ubicación actual');
+   load();
+  }, () => {}, { enableHighAccuracy: false, timeout: 8000, maximumAge: 120000 });
+ }
  load(); setInterval(load, 10000);
 });

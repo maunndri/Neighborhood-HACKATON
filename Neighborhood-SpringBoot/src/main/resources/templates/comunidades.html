@@ -1,0 +1,354 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head('Comunidades y Grupos de WhatsApp · Arequipa')}"></head>
+<body>
+<div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: sos-bubble}"></div>
+
+<main class="container py-4">
+ <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+  <span th:text="${mensaje}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+ </div>
+ <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <span th:text="${error}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+ </div>
+
+ <div class="page-heading mb-3">
+  <div>
+   <span class="eyebrow"><i class="bi bi-whatsapp me-1"></i>Comunidades por Distrito y Urbanización · Arequipa</span>
+   <h1 class="section-title mb-1">Grupos de WhatsApp Vecinales de Arequipa</h1>
+   <p class="muted mb-0">
+    Únete al grupo de WhatsApp de tu distrito o urbanización desde el sistema web.
+    <strong>Reglas de convivencia y seguridad:</strong> (1) debes haber iniciado sesión en el sistema web, (2) solo puedes acceder a grupos de tu localización actual, y (3) <strong>máximo 2 grupos por persona</strong> para evitar congestionarlos.
+   </p>
+  </div>
+  <button type="button" class="btn btn-bc align-self-md-center" th:if="${usuarioActual != null and !cupoLleno}" data-bs-toggle="modal" data-bs-target="#nuevaComunidadModal">
+   <i class="bi bi-plus-lg me-1"></i>Registrar urbanización
+  </button>
+ </div>
+
+ <!-- Aviso si no ha iniciado sesión en el sistema web -->
+ <div th:if="${usuarioActual == null}" class="alert alert-warning rounded-4 shadow-sm d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-2 mb-3">
+  <div>
+   <i class="bi bi-person-lock fs-5 me-2"></i>
+   <strong>Acceso exclusivo desde el sistema web:</strong> Para entrar a un grupo de WhatsApp vecinal y leer o enviar mensajes, debes estar conectado con tu cuenta de vecino.
+  </div>
+  <div class="d-flex gap-2 flex-shrink-0">
+   <a th:href="@{/login}" class="btn btn-bc btn-sm fw-bold">Iniciar sesión</a>
+   <a th:href="@{/registro}" class="btn btn-outline-success btn-sm fw-bold">Crear cuenta con mi ubicación</a>
+  </div>
+ </div>
+
+ <!-- Indicador de Cupo Anticongestión (Máximo 2 grupos de WhatsApp por persona) -->
+ <div th:if="${usuarioActual != null}" class="content-card mb-3 py-3 border-start border-4" th:classappend="${cupoLleno} ? ' border-warning' : ' border-success'">
+  <div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-center gap-2">
+   <div>
+    <div class="d-flex align-items-center gap-2 flex-wrap">
+     <span class="badge" th:classappend="${cupoLleno} ? ' bg-warning text-dark' : ' bg-success text-white'">
+      <i class="bi bi-people-fill me-1"></i>CUPO ANTICONGESTIÓN: <span th:text="${totalUnidos}">0</span> / <span th:text="${maxGrupos}">2</span> GRUPOS
+     </span>
+     <span class="small fw-semibold" th:text="${cupoLleno} ? 'Alcanzaste el límite de 2 grupos de WhatsApp permitidos por vecino.' : 'Puedes unirte hasta a 2 grupos de tu localización (ej. 1 Distrital + 1 Urbanización).'"></span>
+    </div>
+   </div>
+   <div class="d-flex flex-wrap gap-2" th:if="${!#lists.isEmpty(misGrupos)}">
+    <div th:each="mg : ${misGrupos}" class="d-inline-flex align-items-center gap-1 bg-light border rounded-pill px-3 py-1 small">
+     <i class="bi bi-whatsapp text-success"></i>
+     <a th:href="@{/comunidades/{id}(id=${mg.id})}" class="fw-bold text-success text-decoration-none" th:text="${mg.nombre}"></a>
+     <form th:action="@{/comunidades/{id}/salir(id=${mg.id})}" method="post" class="d-inline ms-1">
+      <button type="submit" class="btn btn-link btn-sm text-danger p-0 text-decoration-none" title="Salir de este grupo para liberar cupo">✕ Salir</button>
+     </form>
+    </div>
+   </div>
+  </div>
+ </div>
+
+ <!-- Panel de Verificación de Localización del Vecino (Geofencing por Distrito / GPS) -->
+ <section class="content-card mb-4 border-success border-2" style="background:linear-gradient(135deg,#f0fdf4 0%,#ffffff 100%)">
+  <div class="row g-3 align-items-center">
+   <div class="col-lg-5">
+    <div class="d-flex align-items-center gap-2 mb-1">
+     <span class="badge bg-success text-white px-2 py-1"><i class="bi bi-geo-alt-fill me-1"></i>LOCALIZACIÓN DEL VECINO</span>
+     <span class="small text-success fw-semibold">Sincronizada con el Mapa Vecinal</span>
+    </div>
+    <h2 class="h5 fw-bold mb-1">
+     Ubicación actual: <span class="text-success" th:text="${ubicacionZona}">Tiabaya, Arequipa</span>
+    </h2>
+    <p class="small text-secondary mb-0">
+     Distrito verificado: <strong th:text="${ubicacionDistrito}">Tiabaya</strong>.
+     Grupos disponibles en tu zona: <strong th:text="${#lists.size(comunidadesHabilitadas)}">3</strong>.
+    </p>
+   </div>
+   <div class="col-lg-7">
+    <form th:action="@{/comunidades/ubicacion}" method="post" id="form-ubicacion-comunidad" class="row g-2 align-items-end">
+     <input type="hidden" name="latitud" id="com-lat">
+     <input type="hidden" name="longitud" id="com-lng">
+     <div class="col-sm-4">
+      <label class="form-label small fw-bold mb-1">Tu distrito en Arequipa</label>
+      <select class="form-select form-select-sm" name="distrito" id="select-distrito-aqp">
+       <option th:each="d : ${distritosArequipa}" th:value="${d}" th:text="${d}" th:selected="${d == ubicacionDistrito}"></option>
+      </select>
+     </div>
+     <div class="col-sm-4">
+      <label class="form-label small fw-bold mb-1">Urbanización / Sector (opcional)</label>
+      <input type="text" class="form-control form-control-sm" name="urbanizacion" placeholder="Ej. Los Tunales, Vallecito, Lara">
+     </div>
+     <div class="col-sm-4 d-flex gap-1">
+      <button type="submit" class="btn btn-bc btn-sm flex-grow-1 fw-semibold">
+       <i class="bi bi-check2-circle me-1"></i>Confirmar zona
+      </button>
+      <button type="button" id="btn-gps-comunidad" class="btn btn-outline-success btn-sm" title="Detectar mi distrito con GPS real">
+       <i class="bi bi-crosshair"></i> GPS
+      </button>
+     </div>
+    </form>
+   </div>
+  </div>
+ </section>
+
+ <!-- Sección destacada: Grupos de WhatsApp de tu zona actual habilitados -->
+ <section class="mb-4" th:if="${!#lists.isEmpty(comunidadesHabilitadas) and distritoSeleccionado == '' and q == ''}">
+  <div class="d-flex align-items-center justify-content-between mb-2 flex-wrap gap-2">
+   <h2 class="h5 fw-bold mb-0 text-success">
+    <i class="bi bi-unlock-fill me-1"></i>Grupos de WhatsApp de tu localización (<span th:text="${ubicacionDistrito}">Tiabaya</span>)
+   </h2>
+   <span class="small text-secondary">Máximo 2 grupos por vecino para evitar congestión</span>
+  </div>
+  <div class="row g-3">
+   <div class="col-md-6 col-xl-4" th:each="c : ${comunidadesHabilitadas}">
+    <article class="content-card h-100 d-flex flex-column border-success border-2 shadow-sm">
+     <div class="d-flex justify-content-between align-items-start gap-2 mb-2 flex-wrap">
+      <span class="badge bg-success-subtle text-success border border-success-subtle">
+       <i class="bi bi-check-circle-fill me-1"></i>En tu zona · <span th:text="${c.distrito}"></span>
+      </span>
+      <span class="badge bg-success text-white" th:if="${c.unido}"><i class="bi bi-person-check-fill me-1"></i>Unido</span>
+      <span class="badge text-bg-light border" th:text="${c.nivel}">Distrital</span>
+     </div>
+     <div class="d-flex align-items-center gap-2 mb-2">
+      <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0" style="width:44px;height:44px;background:#25D366;font-size:1.35rem">
+       <i class="bi bi-whatsapp"></i>
+      </div>
+      <div>
+       <h3 class="h6 fw-bold mb-0" th:text="${c.nombre}"></h3>
+       <small class="text-secondary"><i class="bi bi-geo-alt-fill text-success me-1"></i><span th:text="${c.urbanizacion}"></span></small>
+      </div>
+     </div>
+     <p class="small text-secondary mb-2" th:text="${c.descripcion}"></p>
+
+     <!-- Vista previa del último mensaje de la comunidad -->
+     <div class="p-2 rounded-3 mb-3 small" style="background:#eef8f3;border-left:3px solid #25D366" th:if="${c.ultimoMensajeTexto != null}">
+      <div class="fw-bold text-success"><i class="bi bi-chat-left-text-fill me-1"></i>Último mensaje (<span th:text="${c.ultimoMensajeAutor}"></span>):</div>
+      <div class="text-dark text-truncate" th:text="${c.ultimoMensajeTexto}"></div>
+     </div>
+
+     <div class="d-flex flex-wrap gap-2 small text-secondary mt-auto mb-3">
+      <span><i class="bi bi-people-fill text-success me-1"></i><strong th:text="${c.totalMiembros}">0</strong> vecinos</span>
+      <span>·</span>
+      <span><i class="bi bi-chat-dots-fill text-success me-1"></i><strong th:text="${c.totalMensajes}">0</strong> mensajes</span>
+      <span th:if="${c.distanciaKm != null}">· <span th:text="${c.distanciaFormato}"></span></span>
+     </div>
+
+     <!-- Acciones según sesión en la web y límite de 2 grupos -->
+     <div class="d-grid gap-2" th:if="${usuarioActual == null}">
+      <a th:href="@{/login}" class="btn btn-outline-success fw-bold">
+       <i class="bi bi-box-arrow-in-right me-1"></i>Inicia sesión en el sistema web para acceder
+      </a>
+     </div>
+
+     <div class="d-flex gap-2" th:if="${usuarioActual != null and c.unido}">
+      <a th:href="@{/comunidades/{id}(id=${c.id})}" class="btn btn-success fw-bold flex-grow-1" style="background:#128C7E;border-color:#128C7E">
+       <i class="bi bi-whatsapp me-1"></i>Abrir grupo y ver mensajes
+      </a>
+      <form th:action="@{/comunidades/{id}/salir(id=${c.id})}" method="post">
+       <button type="submit" class="btn btn-outline-danger" title="Salir del grupo">Salir</button>
+      </form>
+     </div>
+
+     <div th:if="${usuarioActual != null and !c.unido and !cupoLleno}">
+      <form th:action="@{/comunidades/{id}/unirse(id=${c.id})}" method="post" class="d-grid">
+       <button type="submit" class="btn btn-success fw-bold" style="background:#128C7E;border-color:#128C7E">
+        <i class="bi bi-whatsapp me-1"></i>Unirme al Grupo de WhatsApp (<span th:text="${totalUnidos} + '/' + ${maxGrupos}">0/2</span>)
+       </button>
+      </form>
+     </div>
+
+     <div class="d-grid" th:if="${usuarioActual != null and !c.unido and cupoLleno}">
+      <button type="button" class="btn btn-outline-secondary btn-sm py-2" disabled>
+       <i class="bi bi-exclamation-circle me-1"></i>Límite alcanzado (máx. 2 grupos por persona)
+      </button>
+     </div>
+    </article>
+   </div>
+  </div>
+ </section>
+
+ <!-- Filtros por Distrito de Arequipa y Nivel (Distrital vs Urbanización) -->
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2 mt-4">
+  <h2 class="h5 fw-bold mb-0">Directorio completo de comunidades de Arequipa</h2>
+  <div class="filter-pills d-flex gap-1">
+   <a class="btn btn-sm btn-outline-success" th:classappend="${nivelSeleccionado == ''} ? ' active'" th:href="@{/comunidades(distrito=${distritoSeleccionado},q=${q})}">Todos los niveles</a>
+   <a class="btn btn-sm btn-outline-success" th:classappend="${nivelSeleccionado == 'Distrital'} ? ' active'" th:href="@{/comunidades(distrito=${distritoSeleccionado},nivel='Distrital',q=${q})}"><i class="bi bi-building me-1"></i>Nivel Distrital</a>
+   <a class="btn btn-sm btn-outline-success" th:classappend="${nivelSeleccionado == 'Urbanización / Junta Vecinal'} ? ' active'" th:href="@{/comunidades(distrito=${distritoSeleccionado},nivel='Urbanización / Junta Vecinal',q=${q})}"><i class="bi bi-houses me-1"></i>Urbanización / Junta Vecinal</a>
+  </div>
+ </div>
+
+ <form th:action="@{/comunidades}" method="get" class="search-box d-flex gap-2 mb-3">
+  <input type="hidden" name="distrito" th:value="${distritoSeleccionado}">
+  <input type="hidden" name="nivel" th:value="${nivelSeleccionado}">
+  <i class="bi bi-search text-secondary align-self-center ms-2"></i>
+  <input class="form-control border-0 shadow-none" name="q" th:value="${q}" placeholder="Busca tu distrito o urbanización (ej. Tiabaya, Los Tunales, Vallecito, Umacollo, Cayma, Lara)…">
+  <button class="btn btn-bc px-4">Buscar</button>
+ </form>
+
+ <div class="chip-row mb-3">
+  <a class="chip" th:classappend="${distritoSeleccionado == ''} ? ' active'" th:href="@{/comunidades(nivel=${nivelSeleccionado})}">Todo Arequipa</a>
+  <a class="chip" th:each="d : ${distritosArequipa}" th:classappend="${distritoSeleccionado == d} ? ' active'" th:href="@{/comunidades(distrito=${d},nivel=${nivelSeleccionado})}" th:text="${d}"></a>
+ </div>
+
+ <!-- Lista de todas las Comunidades de WhatsApp de Arequipa -->
+ <div class="row g-3">
+  <div class="col-md-6 col-xl-4" th:each="c : ${comunidades}">
+   <article class="content-card h-100 d-flex flex-column" th:classappend="${c.accesoPermitido} ? ' border-success' : ' opacity-90 bg-light'">
+    <div class="d-flex justify-content-between align-items-center gap-1 mb-2 flex-wrap">
+     <span class="badge" th:classappend="${c.accesoPermitido} ? ' bg-success text-white' : ' bg-secondary text-white'">
+      <i class="bi" th:classappend="${c.accesoPermitido} ? ' bi-geo-alt-fill me-1' : ' bi-lock-fill me-1'"></i>
+      <span th:text="${c.distrito}">Distrito</span>
+     </span>
+     <span class="badge bg-success text-white" th:if="${c.unido}"><i class="bi bi-check2-circle me-1"></i>Miembro</span>
+     <span class="badge text-bg-light border" th:text="${c.nivel}">Nivel</span>
+     <span class="small text-secondary ms-auto" th:if="${c.distanciaKm != null}" th:text="${c.distanciaFormato}"></span>
+    </div>
+
+    <div class="d-flex align-items-center gap-2 mb-2">
+     <div class="rounded-circle d-flex align-items-center justify-content-center text-white flex-shrink-0"
+          th:style="${c.accesoPermitido} ? 'width:40px;height:40px;background:#25D366;font-size:1.2rem' : 'width:40px;height:40px;background:#6c757d;font-size:1.2rem'">
+      <i class="bi bi-whatsapp"></i>
+     </div>
+     <div>
+      <h3 class="h6 fw-bold mb-0" th:text="${c.nombre}"></h3>
+      <div class="small text-secondary"><i class="bi bi-pin-map me-1"></i><span th:text="${c.urbanizacion}"></span></div>
+     </div>
+    </div>
+
+    <p class="small text-secondary mb-2 flex-grow-1" th:text="${c.descripcion}"></p>
+
+    <div class="small text-muted mb-2 font-monospace">
+     <i class="bi bi-link-45deg"></i> <span th:text="${c.codigoWhatsapp}">chat.whatsapp.com/...</span>
+    </div>
+
+    <div class="d-flex flex-wrap gap-2 small text-secondary mb-3">
+     <span><i class="bi bi-people-fill me-1"></i><strong th:text="${c.totalMiembros}">0</strong> miembros</span>
+     <span>·</span>
+     <span><i class="bi bi-chat-dots me-1"></i><strong th:text="${c.totalMensajes}">0</strong> mensajes en el grupo</span>
+    </div>
+
+    <!-- Si el vecino pertenece a esa localización -->
+    <div th:if="${c.accesoPermitido}">
+     <div class="small text-success fw-semibold mb-2">
+      <i class="bi bi-check2-circle me-1"></i><span th:text="${c.razonAcceso}">Acceso verificado</span>
+     </div>
+     <a th:if="${usuarioActual == null}" th:href="@{/login}" class="btn btn-outline-success btn-sm w-100 fw-bold py-2">
+      <i class="bi bi-box-arrow-in-right me-1"></i>Inicia sesión en la web para unirte
+     </a>
+     <div th:if="${usuarioActual != null and c.unido}" class="d-flex gap-2">
+      <a th:href="@{/comunidades/{id}(id=${c.id})}" class="btn btn-success btn-sm flex-grow-1 fw-bold py-2" style="background:#128C7E;border-color:#128C7E">
+       <i class="bi bi-whatsapp me-1"></i>Entrar y ver mensajes
+      </a>
+      <form th:action="@{/comunidades/{id}/salir(id=${c.id})}" method="post">
+       <button type="submit" class="btn btn-outline-danger btn-sm py-2">Salir</button>
+      </form>
+     </div>
+     <form th:if="${usuarioActual != null and !c.unido and !cupoLleno}" th:action="@{/comunidades/{id}/unirse(id=${c.id})}" method="post">
+      <button type="submit" class="btn btn-success btn-sm w-100 fw-bold py-2" style="background:#128C7E;border-color:#128C7E">
+       <i class="bi bi-whatsapp me-1"></i>Unirme al grupo y ver mensajes (<span th:text="${totalUnidos} + '/' + ${maxGrupos}">0/2</span>)
+      </button>
+     </form>
+     <button th:if="${usuarioActual != null and !c.unido and cupoLleno}" type="button" class="btn btn-outline-secondary btn-sm w-100 py-2" disabled>
+      <i class="bi bi-exclamation-circle me-1"></i>Cupo lleno: máximo 2 grupos por vecino
+     </button>
+    </div>
+
+    <!-- Si el vecino NO pertenece a esa localización -->
+    <div th:unless="${c.accesoPermitido}">
+     <div class="small text-danger fw-semibold mb-2">
+      <i class="bi bi-shield-lock-fill me-1"></i>Restringido: solo residentes ubicados en <span th:text="${c.distrito}"></span>
+     </div>
+     <button type="button" class="btn btn-outline-secondary btn-sm w-100" disabled>
+      <i class="bi bi-lock-fill me-1"></i>Fuera de tu localización actual (<span th:text="${ubicacionDistrito}"></span>)
+     </button>
+    </div>
+   </article>
+  </div>
+ </div>
+</main>
+
+<!-- Modal para crear un nuevo grupo de urbanización -->
+<div class="modal fade" id="nuevaComunidadModal" tabindex="-1" aria-hidden="true" th:if="${usuarioActual != null}">
+ <div class="modal-dialog modal-dialog-centered">
+  <div class="modal-content border-0 bc-modal">
+   <form th:action="@{/comunidades/nueva}" method="post" data-offline="true" data-offline-label="la nueva comunidad vecinal">
+    <div class="modal-body p-4">
+     <h2 class="h5 fw-bold mb-1"><i class="bi bi-whatsapp text-success me-2"></i>Registrar Grupo Vecinal de Urbanización</h2>
+     <p class="small text-secondary mb-3">Si tu urbanización, pueblo tradicional o manzana aún no está en la lista de Arequipa, regístrala (ocupará 1 de tus 2 cupos de grupo permitidos).</p>
+     <div class="mb-2">
+      <label class="form-label small fw-bold">Distrito de Arequipa</label>
+      <select class="form-select" name="distrito" required>
+       <option th:each="d : ${distritosArequipa}" th:value="${d}" th:text="${d}" th:selected="${d == ubicacionDistrito}"></option>
+      </select>
+     </div>
+     <div class="mb-2">
+      <label class="form-label small fw-bold">Nivel de la comunidad</label>
+      <select class="form-select" name="nivel">
+       <option value="Urbanización / Junta Vecinal">Urbanización / Junta Vecinal</option>
+       <option value="Distrital">Distrital</option>
+      </select>
+     </div>
+     <div class="mb-2">
+      <label class="form-label small fw-bold">Urbanización, sector o pueblo tradicional</label>
+      <input class="form-control" name="urbanizacion" placeholder="Ej. Urb. Los Tunales, Pampa de Camarones, Vallecito" required maxlength="180">
+     </div>
+     <div class="mb-2">
+      <label class="form-label small fw-bold">Nombre del grupo de WhatsApp</label>
+      <input class="form-control" name="nombre" placeholder="Ej. Junta Vecinal WhatsApp · Urb. Los Tunales" required maxlength="150">
+     </div>
+     <div class="mb-3">
+      <label class="form-label small fw-bold">Descripción y reglas de convivencia</label>
+      <textarea class="form-control" name="descripcion" rows="2" placeholder="Avisos de seguridad, oficios recomendados y apoyo mutuo entre vecinos de la urbanización." required maxlength="550"></textarea>
+     </div>
+     <div class="d-flex justify-content-end gap-2">
+      <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button>
+      <button type="submit" class="btn btn-bc">Crear y unirme</button>
+     </div>
+    </div>
+   </form>
+  </div>
+ </div>
+</div>
+
+<div th:replace="~{fragments :: footer}"></div>
+<div th:replace="~{layout :: scripts}"></div>
+<script>
+document.getElementById('btn-gps-comunidad')?.addEventListener('click', function () {
+ const btn = this;
+ if (!navigator.geolocation) {
+  window.bcToast('Tu navegador no admite geolocalización. Elige tu distrito en la lista.', 'warn');
+  return;
+ }
+ btn.disabled = true;
+ btn.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+ navigator.geolocation.getCurrentPosition(pos => {
+  document.getElementById('com-lat').value = pos.coords.latitude;
+  document.getElementById('com-lng').value = pos.coords.longitude;
+  try { localStorage.setItem('bc_pos', JSON.stringify({ lat: pos.coords.latitude, lon: pos.coords.longitude, ts: Date.now() })); } catch (e) {}
+  document.getElementById('select-distrito-aqp').value = '';
+  document.getElementById('form-ubicacion-comunidad').submit();
+ }, () => {
+  btn.disabled = false;
+  btn.innerHTML = '<i class="bi bi-crosshair"></i> GPS';
+  window.bcToast('No se pudo obtener el GPS. Selecciona tu distrito manualmente y pulsa Confirmar zona.', 'warn');
+ }, { enableHighAccuracy: true, timeout: 10000 });
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{layout :: head(${c.nombre})}"></head>
+<body>
+<div th:replace="~{fragments :: navbar}"></div>
+<div th:replace="~{fragments :: sos-bubble}"></div>
+
+<main class="container py-4">
+ <div th:if="${mensaje}" class="alert alert-success alert-dismissible fade show" role="alert">
+  <span th:text="${mensaje}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+ </div>
+ <div th:if="${error}" class="alert alert-danger alert-dismissible fade show" role="alert">
+  <span th:text="${error}"></span>
+  <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar"></button>
+ </div>
+
+ <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+  <a th:href="@{/comunidades}" class="small text-decoration-none fw-semibold">
+   ← Volver al directorio de Grupos de WhatsApp de Arequipa
+  </a>
+  <div class="d-flex flex-wrap gap-2">
+   <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-2">
+    <i class="bi bi-geo-alt-fill me-1"></i>Localización verificada: <strong th:text="${c.distrito}">Tiabaya</strong>
+   </span>
+   <span class="badge bg-light text-dark border px-3 py-2">
+    <i class="bi bi-people-fill text-success me-1"></i>Cupo anticongestión: <strong th:text="${totalUnidos} + '/' + ${maxGrupos}">1/2</strong> grupos
+   </span>
+  </div>
+ </div>
+
+ <div class="row g-4">
+  <!-- Columna principal: Sala de Grupo de WhatsApp Vecinal -->
+  <div class="col-lg-8">
+   <div class="card border-0 shadow rounded-4 overflow-hidden">
+    <!-- Cabecera estilo WhatsApp Vecinal -->
+    <div class="p-3 text-white d-flex flex-wrap justify-content-between align-items-center gap-2" style="background:linear-gradient(90deg,#075E54 0%,#128C7E 100%)">
+     <div class="d-flex align-items-center gap-3">
+      <div class="rounded-circle d-flex align-items-center justify-content-center bg-white text-success flex-shrink-0 shadow-sm" style="width:48px;height:48px;font-size:1.6rem">
+       <i class="bi bi-whatsapp"></i>
+      </div>
+      <div>
+       <div class="d-flex align-items-center gap-2 flex-wrap">
+        <h1 class="h5 fw-bold mb-0 text-white" th:text="${c.nombre}">Grupo Vecinal</h1>
+        <span class="badge bg-light text-dark small" th:text="${c.nivel}">Distrital</span>
+       </div>
+       <div class="small opacity-90">
+        <i class="bi bi-pin-map-fill me-1"></i><span th:text="${c.urbanizacion}"></span> ·
+        <strong th:text="${c.totalMiembros}">0</strong> vecinos conectados
+       </div>
+      </div>
+     </div>
+     <div class="d-flex align-items-center gap-2">
+      <form th:unless="${c.unido}" th:action="@{/comunidades/{id}/unirse(id=${c.id})}" method="post" data-offline="true" data-offline-label="tu unión al grupo vecinal">
+       <button type="submit" class="btn btn-light btn-sm fw-bold text-success shadow-sm">
+        <i class="bi bi-person-plus-fill me-1"></i>Unirme (<span th:text="${totalUnidos} + '/' + ${maxGrupos}">0/2</span>)
+       </button>
+      </form>
+      <span th:if="${c.unido}" class="badge bg-white text-success px-3 py-2 fw-bold">
+       <i class="bi bi-check-circle-fill me-1"></i>Miembro unido
+      </span>
+      <form th:if="${c.unido}" th:action="@{/comunidades/{id}/salir(id=${c.id})}" method="post">
+       <button type="submit" class="btn btn-outline-light btn-sm" title="Salir de este grupo para liberar uno de tus 2 cupos">Salir</button>
+      </form>
+     </div>
+    </div>
+
+    <!-- Cinta de invitación simulada de WhatsApp + estado de seguridad -->
+    <div class="px-3 py-2 d-flex flex-wrap justify-content-between align-items-center gap-2 small border-bottom" style="background:#dcf8c6">
+     <div>
+      <i class="bi bi-shield-check text-success me-1"></i>
+      <strong>Enlace interno del sistema web:</strong>
+      <span class="font-monospace text-dark" th:text="${c.codigoWhatsapp}">chat.whatsapp.com/...</span>
+     </div>
+     <span class="text-success fw-semibold">
+      <i class="bi bi-lock-fill me-1"></i>Exclusivo usuarios conectados en <span th:text="${c.distrito}"></span>
+     </span>
+    </div>
+
+    <!-- Historial de mensajes de la comunidad (estilo burbujas de WhatsApp) -->
+    <div class="p-3 p-md-4 d-flex flex-column gap-3" style="background-color:#efeae2;min-height:430px;max-height:560px;overflow-y:auto">
+     <div class="text-center my-1">
+      <span class="badge rounded-pill px-3 py-2 text-dark shadow-sm" style="background:#fff5c4;font-weight:500">
+       <i class="bi bi-info-circle me-1"></i>Mensajes verificados de los vecinos de <strong th:text="${c.urbanizacion}"></strong> (<span th:text="${c.distrito}"></span>)
+      </span>
+     </div>
+
+     <div th:each="m, iter : ${mensajes}"
+          th:id="${iter.last} ? 'ultimo-mensaje' : null"
+          class="d-flex flex-column"
+          th:classappend="${usuarioActual != null and m.usuario != null and usuarioActual.id == m.usuario.id} ? ' align-items-end' : ' align-items-start'">
+      <div class="p-3 rounded-4 shadow-sm"
+           style="max-width:85%"
+           th:styleappend="${usuarioActual != null and m.usuario != null and usuarioActual.id == m.usuario.id} ? 'background:#d9fdd3;border-top-right-radius:4px!important' : 'background:#ffffff;border-top-left-radius:4px!important'">
+       <div class="d-flex align-items-center justify-content-between gap-2 mb-1 flex-wrap">
+        <div class="d-flex align-items-center gap-1">
+         <strong class="small" style="color:#075E54" th:text="${m.autorNombre}">Vecino</strong>
+         <span class="badge bg-light text-secondary border" style="font-size:0.7rem" th:if="${m.autorZona != null}" th:text="${m.autorZona}">Zona</span>
+        </div>
+        <span th:if="${m.tipo == 'alerta'}" class="badge bg-danger text-white" style="font-size:0.7rem">🚨 Alerta Vecinal</span>
+        <span th:if="${m.tipo == 'servicio'}" class="badge bg-success text-white" style="font-size:0.7rem">🔧 Oficio / Producto</span>
+        <span th:if="${m.tipo == 'favor'}" class="badge bg-primary text-white" style="font-size:0.7rem">🤝 Favor Solidario</span>
+        <span th:if="${m.tipo == 'general'}" class="badge bg-secondary-subtle text-dark" style="font-size:0.7rem">💬 Comunidad</span>
+       </div>
+       <p class="mb-1 text-dark" style="white-space:pre-line;font-size:0.95rem" th:text="${m.contenido}"></p>
+       <div class="text-end text-secondary" style="font-size:0.72rem">
+        <span th:text="${m.fechaHora}">12:30</span>
+        <i class="bi bi-check2-all text-primary ms-1"></i>
+       </div>
+      </div>
+     </div>
+    </div>
+
+    <!-- Barra inferior para escribir mensaje al grupo de WhatsApp de la comunidad -->
+    <div class="p-3 bg-light border-top">
+     <form th:action="@{/comunidades/{id}/mensaje(id=${c.id})}" method="post" data-offline="true" data-offline-label="tu mensaje al grupo vecinal" class="vstack gap-2">
+      <div class="row g-2 align-items-center">
+       <div class="col-sm-5">
+        <select class="form-select form-select-sm" name="tipo" aria-label="Tipo de mensaje">
+         <option value="general">💬 Aviso general de la cuadra</option>
+         <option value="alerta">🚨 Alerta / Seguridad / Agua</option>
+         <option value="servicio">🔧 Oficio o producto local</option>
+         <option value="favor">🤝 Pedir u ofrecer un favor</option>
+        </select>
+       </div>
+       <div class="col-sm-7 small text-secondary">
+        Publicando como <strong th:text="${usuarioActual.nombreCorto}">Vecino</strong> (<span th:text="${ubicacionZona}">Tiabaya</span>)
+       </div>
+      </div>
+      <div class="input-group">
+       <input type="text" class="form-control" name="contenido" placeholder="Escribe un mensaje para tus vecinos del grupo de WhatsApp…" required maxlength="1000">
+       <button type="submit" class="btn btn-success fw-bold px-4" style="background:#128C7E;border-color:#128C7E">
+        <i class="bi bi-send-fill me-1"></i>Enviar al grupo
+       </button>
+      </div>
+     </form>
+    </div>
+   </div>
+  </div>
+
+  <!-- Columna lateral: Detalles de la Comunidad, Vecinos y Accesos Rápidos del Distrito -->
+  <div class="col-lg-4">
+   <section class="content-card mb-3">
+    <h2 class="h6 fw-bold mb-2"><i class="bi bi-info-circle-fill text-success me-1"></i>Reglas del Grupo Vecinal</h2>
+    <p class="small text-secondary mb-2" th:text="${c.descripcion}"></p>
+    <ul class="list-unstyled small mb-3 vstack gap-1">
+     <li><i class="bi bi-check2 text-success me-1"></i><strong>Distrito:</strong> <span th:text="${c.distrito}"></span></li>
+     <li><i class="bi bi-check2 text-success me-1"></i><strong>Cobertura:</strong> <span th:text="${c.urbanizacion}"></span></li>
+     <li><i class="bi bi-check2 text-success me-1"></i><strong>Límite anticongestión:</strong> Máx. 2 grupos por vecino</li>
+     <li><i class="bi bi-check2 text-success me-1"></i><strong>Acceso:</strong> Solo desde el sistema web con ubicación verificada</li>
+    </ul>
+    <div class="d-grid gap-2">
+     <a th:href="@{/mapa}" class="btn btn-bc btn-sm">
+      <i class="bi bi-map-fill me-1"></i>Ver mi ubicación en el Mapa Vecinal
+     </a>
+     <a th:href="@{/servicios(q=${c.distrito})}" class="btn btn-outline-success btn-sm">
+      <i class="bi bi-tools me-1"></i>Ver oficios en <span th:text="${c.distrito}"></span>
+     </a>
+     <a th:href="@{/favores}" class="btn btn-outline-primary btn-sm">
+      <i class="bi bi-heart-fill me-1"></i>Ver Cadena de Favores
+     </a>
+    </div>
+   </section>
+
+   <section class="content-card mb-3" th:if="${!#lists.isEmpty(miembros)}">
+    <h2 class="h6 fw-bold mb-2"><i class="bi bi-people-fill text-success me-1"></i>Vecinos verificados en el grupo</h2>
+    <div class="vstack gap-2">
+     <div class="d-flex align-items-center gap-2 small" th:each="mb : ${miembros}">
+      <span class="provider-avatar" th:text="${#strings.substring(mb.usuario.nombre,0,1)}">V</span>
+      <div>
+       <strong th:text="${mb.usuario.nombreCorto}"></strong>
+       <span class="badge-solidario ms-1" th:text="${mb.usuario.insigniaSolidaria}"></span>
+       <div class="text-secondary" style="font-size:0.75rem" th:text="${mb.usuario.zona}"></div>
+      </div>
+     </div>
+    </div>
+   </section>
+
+   <section class="content-card" th:if="${!#lists.isEmpty(otrosDelDistrito)}">
+    <h2 class="h6 fw-bold mb-2">Otros grupos en <span th:text="${c.distrito}"></span></h2>
+    <div class="vstack gap-2">
+     <a th:each="o : ${otrosDelDistrito}" th:href="@{/comunidades/{id}(id=${o.id})}" class="p-2 rounded-3 border text-decoration-none d-block hover-shadow">
+      <div class="fw-bold small text-success"><i class="bi bi-whatsapp me-1"></i><span th:text="${o.nombre}"></span></div>
+      <div class="small text-secondary" th:text="${o.urbanizacion}"></div>
+     </a>
+    </div>
+   </section>
+  </div>
+ </div>
+</main>
+
+<div th:replace="~{fragments :: footer}"></div>
+<div th:replace="~{layout :: scripts}"></div>
+</body>
+</html>

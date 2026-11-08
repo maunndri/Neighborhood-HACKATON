@@ -100,10 +100,25 @@ public class WebController {
                             HttpSession session, RedirectAttributes ra) {
         try {
             if (password.length() < 6) throw new IllegalArgumentException("La contraseña debe tener al menos 6 caracteres.");
-            Usuario u = usuarioService.registrar(nombre, correo, password, zona);
-            u.setTelefono(telefono); u.setLatitud(latitud); u.setLongitud(longitud); usuarios.save(u);
+            String zonaFinal = (zona != null && !zona.isBlank()) ? zona.trim() : null;
+            Double latFinal = latitud;
+            Double lngFinal = longitud;
+            if (latFinal != null && lngFinal != null && zonaFinal == null) {
+                zonaFinal = ComunidadController.detectarDistritoMasCercano(latFinal, lngFinal) + ", Arequipa";
+            } else if (latFinal == null || lngFinal == null) {
+                if (zonaFinal == null) zonaFinal = "Tiabaya, Arequipa";
+                double[] coords = ComunidadController.coordenadasParaZona(zonaFinal);
+                latFinal = coords[0];
+                lngFinal = coords[1];
+            }
+            Usuario u = usuarioService.registrar(nombre, correo, password, zonaFinal);
+            u.setTelefono(telefono); u.setLatitud(latFinal); u.setLongitud(lngFinal); usuarios.save(u);
             sesion.iniciar(session, u);
-            ra.addFlashAttribute("mensaje", "¡Bienvenido a Neighborhood! Toca «¿Cómo funciona?» para ver la guía rápida.");
+            session.setAttribute("ubicacionZona", zonaFinal);
+            session.setAttribute("ubicacionDistrito", ComunidadController.detectarDistritoDesdeTexto(zonaFinal));
+            session.setAttribute("ubicacionLat", latFinal);
+            session.setAttribute("ubicacionLng", lngFinal);
+            ra.addFlashAttribute("mensaje", "¡Bienvenido a Neighborhood! Tu ubicación actual en «" + zonaFinal + "» quedó activada para el mapa vecinal y tus grupos de WhatsApp.");
             return "redirect:/";
         } catch (IllegalArgumentException ex) {
             ra.addFlashAttribute("error", ex.getMessage()); return "redirect:/registro";
@@ -115,9 +130,33 @@ public class WebController {
 
     @PostMapping("/login")
     public String iniciarSesion(@RequestParam String correo, @RequestParam String password,
+                                @RequestParam(required = false) Double latitud,
+                                @RequestParam(required = false) Double longitud,
                                 HttpSession session, RedirectAttributes ra) {
         Usuario u = usuarioService.autenticar(correo, password);
         if (u == null) { ra.addFlashAttribute("error", "Correo o contraseña incorrectos, o la cuenta está suspendida."); return "redirect:/login"; }
+        // Si el navegador envió la ubicación GPS actual al ingresar y el usuario aún no tenía coordenadas o desea sincronizarlas:
+        if (latitud != null && longitud != null && latitud >= -90 && latitud <= 90 && longitud >= -180 && longitud <= 180) {
+            if (u.getLatitud() == null || u.getLongitud() == null) {
+                u.setLatitud(latitud);
+                u.setLongitud(longitud);
+                if (u.getZona() == null || u.getZona().isBlank()) {
+                    u.setZona(ComunidadController.detectarDistritoMasCercano(latitud, longitud) + ", Arequipa");
+                }
+                usuarios.save(u);
+            }
+            session.setAttribute("ubicacionLat", u.getLatitud());
+            session.setAttribute("ubicacionLng", u.getLongitud());
+        } else if (u.getLatitud() == null || u.getLongitud() == null) {
+            double[] coords = ComunidadController.coordenadasParaZona(u.getZona());
+            u.setLatitud(coords[0]);
+            u.setLongitud(coords[1]);
+            usuarios.save(u);
+        }
+        session.setAttribute("ubicacionZona", u.getZona());
+        session.setAttribute("ubicacionDistrito", ComunidadController.detectarDistritoDesdeTexto(u.getZona()));
+        session.setAttribute("ubicacionLat", u.getLatitud());
+        session.setAttribute("ubicacionLng", u.getLongitud());
         sesion.iniciar(session, u);
         return "redirect:/";
     }
@@ -282,8 +321,10 @@ public class WebController {
     @GetMapping("/mapa")
     public String mapa(HttpSession session, Model model) {
         Usuario u = sesion.actual(session);
-        model.addAttribute("latitudUsuario", u == null ? null : u.getLatitud());
-        model.addAttribute("longitudUsuario", u == null ? null : u.getLongitud());
+        Double lat = u != null && u.getLatitud() != null ? u.getLatitud() : (Double) session.getAttribute("ubicacionLat");
+        Double lng = u != null && u.getLongitud() != null ? u.getLongitud() : (Double) session.getAttribute("ubicacionLng");
+        model.addAttribute("latitudUsuario", lat);
+        model.addAttribute("longitudUsuario", lng);
         return "mapa";
     }
 
